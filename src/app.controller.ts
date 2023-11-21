@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Scope,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { EmptyResponse } from "./utils/types/EmptyResponse";
 import { AppService } from "./app.service";
@@ -16,10 +17,7 @@ export class AppController {
   getLiveStatus(): EmptyResponse {
     const isLive = this.appService.getLiveStatus();
     if (!isLive) {
-      throw new HttpException(
-        "Server unavailable",
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
+      throw new ServiceUnavailableException();
     }
 
     return {};
@@ -29,10 +27,7 @@ export class AppController {
   getReadyStatus(): EmptyResponse {
     const isReady = this.appService.getReadyStatus();
     if (!isReady) {
-      throw new HttpException(
-        "Server is not ready",
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
+      throw new ServiceUnavailableException();
     }
 
     return {};

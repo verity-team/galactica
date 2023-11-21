@@ -1,8 +1,6 @@
 import {
   Controller,
   Get,
-  HttpException,
-  HttpStatus,
   Scope,
   ServiceUnavailableException,
 } from "@nestjs/common";

@@ -1,24 +1,15 @@
-import { Test, TestingModule } from "@nestjs/testing";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { EmptyResponse } from "./utils/types/EmptyResponse";
+import { ServiceUnavailableException } from "@nestjs/common";
 
 describe("AppController", () => {
   let appController: AppController;
+  let appService: AppService;
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
-      controllers: [AppController],
-      providers: [AppService],
-    }).compile();
-
-    appController = app.get<AppController>(AppController);
-  });
-
-  describe("root", () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe("Hello World!");
-    });
+    appService = new AppService();
+    appController = new AppController(appService);
   });
 
   describe("live status", () => {
@@ -27,12 +18,28 @@ describe("AppController", () => {
         Object,
       );
     });
+
+    it("should throw Service Unavailable exception", () => {
+      jest.spyOn(appService, "getLiveStatus").mockImplementation(() => false);
+
+      expect(() => appController.getLiveStatus()).toThrow(
+        ServiceUnavailableException,
+      );
+    });
   });
 
   describe("ready status", () => {
     it("should return an Empty Response", () => {
       expect(appController.getReadyStatus()).toBeInstanceOf<EmptyResponse>(
         Object,
+      );
+    });
+
+    it("should throw Service Unavailable exception", () => {
+      jest.spyOn(appService, "getReadyStatus").mockImplementation(() => false);
+
+      expect(() => appController.getReadyStatus()).toThrow(
+        ServiceUnavailableException,
       );
     });
   });

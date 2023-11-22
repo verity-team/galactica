@@ -1,8 +1,11 @@
 import {
   Body,
   Controller,
+  FileTypeValidator,
   HttpCode,
   InternalServerErrorException,
+  MaxFileSizeValidator,
+  ParseFilePipe,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -20,7 +23,17 @@ export class MemeController {
   @HttpCode(200)
   @UseInterceptors(FileInterceptor("fileName"))
   async uploadMeme(
-    @UploadedFile() fileName: Express.Multer.File,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({
+            maxSize: Number(process.env.MAX_MEME_SIZE) ?? 20000,
+          }),
+          new FileTypeValidator({ fileType: /\/(jpg|jpeg|png|gif)$/ }),
+        ],
+      }),
+    )
+    fileName: Express.Multer.File,
     @Body() body: UploadMemeDTO,
   ): Promise<EmptyResponse> {
     const uploaded = await this.memeService.uploadMeme(body, fileName);

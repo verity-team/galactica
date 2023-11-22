@@ -1,10 +1,8 @@
 import {
   Body,
   Controller,
-  FileTypeValidator,
   HttpCode,
   InternalServerErrorException,
-  MaxFileSizeValidator,
   ParseFilePipe,
   Post,
   UploadedFile,
@@ -14,6 +12,7 @@ import { MemeService } from "./meme.service";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { UploadMemeDTO } from "./meme.types";
 import { EmptyResponse } from "src/utils/types/EmptyResponse";
+import { memeUploadOptions } from "./meme.config";
 
 @Controller("meme")
 export class MemeController {
@@ -23,16 +22,7 @@ export class MemeController {
   @HttpCode(200)
   @UseInterceptors(FileInterceptor("fileName"))
   async uploadMeme(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({
-            maxSize: Number(process.env.MAX_MEME_SIZE) ?? 20000,
-          }),
-          new FileTypeValidator({ fileType: /\/(jpg|jpeg|png|gif)$/ }),
-        ],
-      }),
-    )
+    @UploadedFile(new ParseFilePipe(memeUploadOptions))
     fileName: Express.Multer.File,
     @Body() body: UploadMemeDTO,
   ): Promise<EmptyResponse> {

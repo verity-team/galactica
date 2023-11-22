@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Header,
   Scope,
   ServiceUnavailableException,
 } from "@nestjs/common";
@@ -12,6 +13,7 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get("live")
+  @Header("Cache-Control", "none")
   getLiveStatus(): EmptyResponse {
     const isLive = this.appService.getLiveStatus();
     if (!isLive) {
@@ -22,6 +24,7 @@ export class AppController {
   }
 
   @Get("ready")
+  @Header("Cache-Control", "none")
   getReadyStatus(): EmptyResponse {
     const isReady = this.appService.getReadyStatus();
     if (!isReady) {

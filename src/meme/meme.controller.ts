@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  HttpCode,
   InternalServerErrorException,
   Post,
   UploadedFile,
@@ -16,6 +17,7 @@ export class MemeController {
   constructor(private readonly memeService: MemeService) {}
 
   @Post()
+  @HttpCode(200)
   @UseInterceptors(FileInterceptor("fileName"))
   async uploadMeme(
     @UploadedFile() fileName: Express.Multer.File,

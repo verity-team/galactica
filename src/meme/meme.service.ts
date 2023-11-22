@@ -8,7 +8,7 @@ export class MemeService {
     meme: Express.Multer.File,
   ): Promise<boolean> {
     console.log(memeInfo);
-    console.log(meme.filename);
+    console.log(meme.size);
 
     return true;
   }

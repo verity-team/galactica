@@ -7,8 +7,8 @@ import {
 export const getMemeUploadOptions = (): ParseFileOptions => {
   let maxSize = Number(process.env.MAX_IMG_SIZE);
   if (isNaN(maxSize)) {
-    // Default max image size to 20kB
-    maxSize = 20000;
+    // Default max image size to 2MB
+    maxSize = 2000000;
   }
 
   // Default to support JPG, JPEG, PNG and GIF

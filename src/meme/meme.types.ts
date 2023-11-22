@@ -5,7 +5,9 @@ export class UploadMemeDTO {
   lang: string;
 
   // TODO: Type for tags ?
-  tag: string[];
+  // TODO: Limit for tags
+  tags: string[];
 
+  // TODO: Limit for caption
   caption: string;
 }

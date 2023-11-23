@@ -19,8 +19,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prepare": "husky install",
-    "docker:build:dev": "docker build --tag galactica -f Dockerfile.dev .",
-    "docker:start:dev": "docker run --name galactica -p 8000:8000 galactica"
+    "docker:build": "docker build --tag galactica .",
+    "docker:start": "docker compose -p galactica -f docker-compose.yaml up",
+    "docker:stop": "docker compose -p galactica down"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",

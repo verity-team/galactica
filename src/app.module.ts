@@ -3,16 +3,16 @@ import { AppController } from "./app.controller";
 import { MemeModule } from "./meme/meme.module";
 import { AppService } from "./app.service";
 import { ConfigModule } from "@nestjs/config";
-import configuration from "@root/config/configuration";
+import { PrismaModule } from "./prisma/prisma.module";
 
 @Module({
   controllers: [AppController],
   imports: [
     ConfigModule.forRoot({
       envFilePath: ".env",
-      load: [configuration],
       isGlobal: true,
     }),
+    PrismaModule,
     MemeModule,
   ],
   providers: [AppService],

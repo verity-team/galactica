@@ -1,5 +1,6 @@
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { PrismaService } from "./prisma/prisma.service";
 import { EmptyResponse } from "./utils/types/EmptyResponse";
 import { ServiceUnavailableException } from "@nestjs/common";
 
@@ -8,7 +9,8 @@ describe("AppController", () => {
   let appService: AppService;
 
   beforeEach(async () => {
-    appService = new AppService();
+    const prismaService = new PrismaService();
+    appService = new AppService(prismaService);
     appController = new AppController(appService);
   });
 
@@ -36,9 +38,11 @@ describe("AppController", () => {
     });
 
     it("should throw Service Unavailable exception", () => {
-      jest.spyOn(appService, "getReadyStatus").mockImplementation(() => false);
+      jest
+        .spyOn(appService, "getReadyStatus")
+        .mockImplementation(() => Promise.resolve(true));
 
-      expect(() => appController.getReadyStatus()).toThrow(
+      expect(async () => await appController.getReadyStatus()).toThrow(
         ServiceUnavailableException,
       );
     });

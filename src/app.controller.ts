@@ -25,8 +25,8 @@ export class AppController {
 
   @Get("ready")
   @Header("Cache-Control", "none")
-  getReadyStatus(): EmptyResponse {
-    const isReady = this.appService.getReadyStatus();
+  async getReadyStatus(): Promise<EmptyResponse> {
+    const isReady = await this.appService.getReadyStatus();
     if (!isReady) {
       throw new ServiceUnavailableException();
     }

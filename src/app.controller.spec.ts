@@ -12,6 +12,8 @@ describe("AppController", () => {
     const prismaService = new PrismaService();
     appService = new AppService(prismaService);
     appController = new AppController(appService);
+
+    jest.clearAllMocks();
   });
 
   describe("live status", () => {
@@ -31,20 +33,25 @@ describe("AppController", () => {
   });
 
   describe("ready status", () => {
-    it("should return an Empty Response", () => {
-      expect(appController.getReadyStatus()).toBeInstanceOf<EmptyResponse>(
-        Object,
-      );
-    });
-
-    it("should throw Service Unavailable exception", () => {
+    it("should return an Empty Response", async () => {
       jest
         .spyOn(appService, "getReadyStatus")
         .mockImplementation(() => Promise.resolve(true));
 
-      expect(async () => await appController.getReadyStatus()).toThrow(
-        ServiceUnavailableException,
-      );
+      const status = await appController.getReadyStatus();
+      expect(status).toBeInstanceOf<EmptyResponse>(Object);
+    });
+
+    it("should throw Service Unavailable exception", async () => {
+      jest
+        .spyOn(appService, "getReadyStatus")
+        .mockImplementation(() => Promise.resolve(false));
+
+      try {
+        await appController.getReadyStatus();
+      } catch (error: any) {
+        expect(error).toBeInstanceOf(ServiceUnavailableException);
+      }
     });
   });
 });

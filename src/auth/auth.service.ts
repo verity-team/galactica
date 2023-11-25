@@ -10,7 +10,10 @@ export class AuthService {
     return generateNonce();
   }
 
-  async verifySignature({ message, signature }: VerifySignatureDTO): boolean {
+  async verifySignature({
+    message,
+    signature,
+  }: VerifySignatureDTO): Promise<boolean> {
     const siweMessage = new SiweMessage(message);
 
     // TODO: Add time + nonce verification

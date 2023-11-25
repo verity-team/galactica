@@ -23,8 +23,10 @@ export class AuthController {
 
   @Post("verify")
   @HttpCode(200)
-  async verifySignature(@Body() body: VerifySignatureDTO): EmptyResponse {
-    const isValid = this.authService.verifySignature(body);
+  async verifySignature(
+    @Body() body: VerifySignatureDTO,
+  ): Promise<EmptyResponse> {
+    const isValid = await this.authService.verifySignature(body);
     if (!isValid) {
       throw new ForbiddenException();
     }

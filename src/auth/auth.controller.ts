@@ -1,6 +1,15 @@
-import { Controller, Get } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  Post,
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { GetNonceResponse } from "./auth.type";
+import { GetNonceResponse } from "./types/GetNonce";
+import { VerifySignatureDTO } from "./types/VerifySignature";
+import { EmptyResponse } from "@/utils/types/EmptyResponse";
 
 @Controller("auth")
 export class AuthController {
@@ -10,5 +19,15 @@ export class AuthController {
   getNonce(): GetNonceResponse {
     const nonce = this.authService.getNonce();
     return { nonce };
+  }
+
+  @Post("verify")
+  @HttpCode(200)
+  async verifySignature(@Body() body: VerifySignatureDTO): EmptyResponse {
+    const isValid = this.authService.verifySignature(body);
+    if (!isValid) {
+      throw new ForbiddenException();
+    }
+    return {};
   }
 }

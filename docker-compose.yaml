@@ -7,12 +7,13 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-    command: /bin/sh -c "npm i; npm run start:dev"
+    command: /bin/sh -c "npm i; npx prisma generate; npm run start:dev"
     ports:
       - "8000:8000"
     volumes:
       - node_modules:/app/node_modules
       - ./:/app:z
+      - images:/app/images
     environment:
       - DATABASE_URL
     depends_on:

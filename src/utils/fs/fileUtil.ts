@@ -33,7 +33,7 @@ export async function saveFile(
   try {
     const fileStat = await stat(filePath);
     if (fileStat) {
-      console.warn("File existed. Abort current operation");
+      console.warn("File existed. Abort current operation", filePath);
       return null;
     }
   } catch {
@@ -65,10 +65,7 @@ export async function removeFile(
   // Check if file exist
   const filePath = `${destination}/${fileName}`;
   try {
-    const fileStat = await stat(filePath);
-    if (fileStat) {
-      console.warn("File existed. Abort current operation");
-    }
+    await stat(filePath);
   } catch {
     return null;
   }

@@ -8,10 +8,14 @@ import { isAddress } from "viem";
 import { PrismaService } from "@/prisma/prisma.service";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { removeFile, saveFile } from "@/utils/fs/fileUtil";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MemeService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
 
   async uploadMeme(
     memeInfo: UploadMemeDTO,
@@ -24,7 +28,8 @@ export class MemeService {
     }
 
     // Save image into file system
-    const fileName = await saveFile(meme, "/app/images");
+    const destination = this.config.get<string>("imageDestination");
+    const fileName = await saveFile(meme, destination);
     if (fileName == null) {
       // Error while writing files to the system. Check logs to debug
       throw new InternalServerErrorException(
@@ -35,9 +40,10 @@ export class MemeService {
     try {
       // Add uploadInfo into db, along with reference to fs image
       await this.saveMemeInfo(memeInfo, fileName);
-      // Rollback image in fs
-      await removeFile(fileName, "/app/images");
     } catch {
+      // Rollback image in fs
+      await removeFile(fileName, destination);
+
       // Error while creating db entry. Check logs to debug
       throw new InternalServerErrorException(
         "Cannot save meme's info into database",

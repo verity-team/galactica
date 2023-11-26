@@ -13,7 +13,6 @@ services:
     volumes:
       - node_modules:/app/node_modules
       - ./:/app:z
-      - images:/app/images
     environment:
       - DATABASE_URL
     depends_on:

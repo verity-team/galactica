@@ -1,6 +1,7 @@
 import { access, stat, writeFile } from "fs/promises";
 import { extension } from "mime";
 import { v4 as uuidv4 } from "uuid";
+import { Maybe } from "../types/util.type";
 
 /**
  *
@@ -12,7 +13,7 @@ export async function saveFile(
   file: Express.Multer.File,
   destination: string,
   fileId?: string,
-): Promise<boolean> {
+): Promise<Maybe<string>> {
   if (fileId == null) {
     fileId = uuidv4();
   }
@@ -22,7 +23,7 @@ export async function saveFile(
     await access(destination);
   } catch (error) {
     console.warn("Path not exist. Abort current operation");
-    return false;
+    return null;
   }
 
   const fileExtension = extension(file.mimetype);
@@ -33,7 +34,7 @@ export async function saveFile(
     const fileStat = await stat(filePath);
     if (fileStat) {
       console.warn("File existed. Abort current operation");
-      return false;
+      return null;
     }
   } catch {
     // Ignore error because it's okay if the file is non-existent
@@ -43,8 +44,8 @@ export async function saveFile(
     await writeFile(filePath, file.buffer);
   } catch (error) {
     console.warn("Error while writing file", error.message);
-    return false;
+    return null;
   }
 
-  return true;
+  return fileId;
 }

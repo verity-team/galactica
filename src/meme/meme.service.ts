@@ -1,19 +1,89 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from "@nestjs/common";
 import { UploadMemeDTO } from "./meme.types";
 import { isAddress } from "viem";
+import { PrismaService } from "@/prisma/prisma.service";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
+import { removeFile, saveFile } from "@/utils/fs/fileUtil";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MemeService {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly config: ConfigService,
+  ) {}
+
   async uploadMeme(
     memeInfo: UploadMemeDTO,
     meme: Express.Multer.File,
   ): Promise<boolean> {
-    if (!isAddress(memeInfo.userId)) {
-      throw new HttpException("Invalid userId", HttpStatus.BAD_REQUEST);
+    try {
+      this.verifyMemeInfo(memeInfo);
+    } catch (error) {
+      throw new BadRequestException(error.message);
     }
 
-    console.log(memeInfo);
-    console.log(meme);
+    // Save image into file system
+    const destination = this.config.get<string>("imageDestination");
+    const fileName = await saveFile(meme, destination);
+    if (fileName == null) {
+      // Error while writing files to the system. Check logs to debug
+      throw new InternalServerErrorException(
+        "Cannot save meme's image into the file system",
+      );
+    }
+
+    try {
+      // Add uploadInfo into db, along with reference to fs image
+      await this.saveMemeInfo(memeInfo, fileName);
+    } catch {
+      // Rollback image in fs
+      await removeFile(fileName, destination);
+
+      // Error while creating db entry. Check logs to debug
+      throw new InternalServerErrorException(
+        "Cannot save meme's info into database",
+      );
+    }
+
+    return true;
+  }
+
+  verifyMemeInfo(memeInfo: UploadMemeDTO): boolean {
+    const { userId } = memeInfo;
+
+    if (!isAddress(userId)) {
+      throw new Error("Invalid userId. Not a wallet address.");
+    }
+
+    return true;
+  }
+
+  async saveMemeInfo(
+    memeInfo: UploadMemeDTO,
+    fileId: string,
+  ): Promise<boolean> {
+    try {
+      await this.prismaService.memeUpload.create({
+        data: { fileId, ...memeInfo },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        // TODO: Change to use a logger with better context
+        console.error(error.message);
+        throw new BadRequestException(
+          "Failed to save meme due to database error",
+        );
+      }
+
+      throw new InternalServerErrorException(
+        "Unknown error occur when saving meme",
+      );
+    }
 
     return true;
   }

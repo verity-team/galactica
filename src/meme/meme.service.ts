@@ -7,7 +7,7 @@ import { UploadMemeDTO } from "./meme.types";
 import { isAddress } from "viem";
 import { PrismaService } from "@/prisma/prisma.service";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
-import { saveFile } from "@/utils/fs/fileUtil";
+import { removeFile, saveFile } from "@/utils/fs/fileUtil";
 
 @Injectable()
 export class MemeService {
@@ -24,14 +24,25 @@ export class MemeService {
     }
 
     // Save image into file system
-    const fileId = await saveFile(meme, "/app/images");
-    if (fileId == null) {
+    const fileName = await saveFile(meme, "/app/images");
+    if (fileName == null) {
       // Error while writing files to the system. Check logs to debug
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(
+        "Cannot save meme's image into the file system",
+      );
     }
 
-    // Add uploadInfo into db, along with reference to fs image
-    await this.saveMemeInfo(memeInfo, fileId);
+    try {
+      // Add uploadInfo into db, along with reference to fs image
+      await this.saveMemeInfo(memeInfo, fileName);
+      // Rollback image in fs
+      await removeFile(fileName, "/app/images");
+    } catch {
+      // Error while creating db entry. Check logs to debug
+      throw new InternalServerErrorException(
+        "Cannot save meme's info into database",
+      );
+    }
 
     return true;
   }

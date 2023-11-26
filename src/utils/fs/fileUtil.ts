@@ -1,5 +1,5 @@
-import { access, stat, writeFile } from "fs/promises";
-import { extension } from "mime";
+import { access, stat, unlink, writeFile } from "fs/promises";
+import * as mime from "mime";
 import { v4 as uuidv4 } from "uuid";
 import { Maybe } from "../types/util.type";
 
@@ -26,7 +26,7 @@ export async function saveFile(
     return null;
   }
 
-  const fileExtension = extension(file.mimetype);
+  const fileExtension = mime.extension(file.mimetype);
   const filePath = `${destination}/${fileId}.${fileExtension}`;
 
   // Check if file exist
@@ -47,5 +47,39 @@ export async function saveFile(
     return null;
   }
 
-  return fileId;
+  return `${fileId}.${fileExtension}`;
+}
+
+export async function removeFile(
+  fileName: string,
+  destination: string,
+): Promise<Maybe<string>> {
+  // Check if destination exist
+  try {
+    await access(destination);
+  } catch (error) {
+    console.warn("Path not exist. Abort current operation");
+    return null;
+  }
+
+  // Check if file exist
+  const filePath = `${destination}/${fileName}`;
+  try {
+    const fileStat = await stat(filePath);
+    if (fileStat) {
+      console.warn("File existed. Abort current operation");
+    }
+  } catch {
+    return null;
+  }
+
+  // Delete targeted file
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    console.warn("Cannot delete file", filePath, "with error", error);
+    return null;
+  }
+
+  return fileName;
 }

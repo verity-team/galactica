@@ -40,3 +40,10 @@ $ npm run test:cov
 
 - `MAX_IMG_SIZE`: Maximum upload image size in bytes, default to 2000000 (2MB) if not configured.
 - `ALLOW_IMG_TYPE`: Valid types of upload image, separated by a `|`. The server support JPG, JPEG, PNG and GIF by default if not configured.
+- `IMAGE_DEST`: Path to directory that store all users' uploaded images
+
+- `DATABASE_URL`: Connection string to connect to a PostgresQL database
+
+- `POSTGRES_USER`: Username used for PostgresQL inside Docker
+- `POSTGRES_PASSWORD`: Password used for PostgresQL inside Docker
+- `POSTGRES_DB`: Database name used for PostgresQL inside Docker

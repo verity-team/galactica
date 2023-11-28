@@ -10,8 +10,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Dummy {
-  id Int @id @default(autoincrement())
+model Nonce {
+  id String @id
 }
 
 // Consider using lang and tags as ENUM to avoid unexpected values

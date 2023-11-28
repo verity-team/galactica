@@ -16,8 +16,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get("nonce")
-  getNonce(): GetNonceResponse {
-    const nonce = this.authService.getNonce();
+  async getNonce(): Promise<GetNonceResponse> {
+    const nonce = await this.authService.getNonce();
     return { nonce };
   }
 

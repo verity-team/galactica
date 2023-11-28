@@ -7,10 +7,14 @@ import { VerifySignatureDTO } from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
+import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async getNonce(): Promise<string> {
     let retry = 3;
@@ -66,7 +70,7 @@ export class AuthService {
       );
     }
 
-    // We can use the message nonce as verifying nonce after we have verified it
+    // We can use the message nonce after we have verified it
     const result = await siweMessage.verify({
       signature,
       nonce: siweMessage.nonce,
@@ -96,7 +100,8 @@ export class AuthService {
     // Reject message if TTL is longer than expected
     const iss = new Date(message.issuedAt);
     const exp = new Date(message.expirationTime);
-    if (exp.getTime() - iss.getTime() > 24 * 60 * 60 * 1000) {
+    const maxTTL = this.configService.get("messageMaxTTL");
+    if (exp.getTime() - iss.getTime() > maxTTL) {
       return false;
     }
 

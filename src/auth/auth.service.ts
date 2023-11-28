@@ -9,9 +9,14 @@ export class AuthService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async getNonce(): Promise<string> {
-    let retry = 5;
+    let retry = 3;
     let nonce = "";
 
+    // When using generateNonce(), there is a small chance for it to generate a less-then-8-char nonce
+    // It will throw error when that "small chance" occur
+
+    // When storing nonce, there is also a small chance for it to generate a duplicate nonce
+    // Prisma will throw error when that "small chance" occur
     while (retry > 0) {
       try {
         nonce = generateNonce();

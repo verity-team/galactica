@@ -71,12 +71,36 @@ export class AuthService {
     }
 
     // We can use the message nonce after we have verified it
-    const result = await siweMessage.verify({
-      signature,
-      nonce: siweMessage.nonce,
-      time: new Date().toISOString(),
-    });
-    return result.success;
+    const result = await siweMessage.verify(
+      {
+        signature,
+        nonce: siweMessage.nonce,
+        time: new Date().toISOString(),
+      },
+      {
+        // This options will include error in result (if any)
+        suppressExceptions: true,
+      },
+    );
+
+    // Handle verification errors (if any)
+    if (result.error || !result.success) {
+      throw new ForbiddenException(
+        "Invalid signature. Please try to sign-in again",
+      );
+    }
+
+    // Delete nonce when the signature have been verified
+    const deleted = await this.deleteNonce(siweMessage.nonce);
+    if (!deleted) {
+      // This error can be safely ignored
+      console.warn("Failed to delete nonce", siweMessage.nonce);
+    }
+
+    // TODO: Return access token
+    // Flow: https://auth0.com/blog/sign-in-with-ethereum-siwe-now-available-on-auth0/
+
+    return true;
   }
 
   async verifySiweMessage(message: SiweMessage): Promise<boolean> {

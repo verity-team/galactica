@@ -25,27 +25,14 @@ export class AuthService {
       try {
         nonce = generateNonce();
 
-        // Store nonce to database
-        await this.prismaService.nonce.create({ data: { id: nonce } });
+        // Try to store nonce into database
+        const saved = await this.storeNonce(nonce);
+        if (!saved) {
+          throw new Error();
+        }
       } catch (error) {
         // When using generateNonce(), there is a small chance for it to generate a less-then-8-char nonce
         // generateNonce() will throw an error when that "small chance" occur
-
-        // When storing nonce, there is also a small chance for it to generate a duplicate nonce
-        // Prisma will throw an error when that it try to add duplicate nonce into the DB
-        if (error instanceof PrismaClientKnownRequestError) {
-          // Database error
-          if (error.code === "P2002") {
-            // Nonce existed => Retry
-            retry--;
-            continue;
-          }
-
-          console.error("Cannot store nonce into database", error.message);
-          throw new InternalServerErrorException("Cannot generate nonce");
-        }
-
-        // Generate nonce error => Retry
         retry--;
         continue;
       }
@@ -97,7 +84,7 @@ export class AuthService {
     const deleted = await this.deleteNonce(siweMessage.nonce);
     if (!deleted) {
       // This error can be safely ignored
-      console.warn("Failed to delete nonce", siweMessage.nonce);
+      console.warn(`Failed to delete nonce: ${siweMessage.nonce}`);
     }
 
     // Accept signature. Issue new access token for account
@@ -166,6 +153,26 @@ export class AuthService {
     return true;
   }
 
+  async storeNonce(nonce: string): Promise<boolean> {
+    try {
+      // Store nonce to database
+      await this.prismaService.nonce.create({ data: { id: nonce } });
+    } catch (error) {
+      // When storing nonce, there is also a small chance for it to generate a duplicate nonce
+      // Prisma will throw an error when that it try to add duplicate nonce into the DB
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          // Database error: Nonce existed
+          console.error(error.message);
+          return false;
+        }
+
+        console.error(error.message);
+        throw new InternalServerErrorException("Cannot generate nonce");
+      }
+    }
+  }
+
   /**
    *
    * @param {string} nonce The nonce you want to delete
@@ -185,7 +192,7 @@ export class AuthService {
         // https://www.prisma.io/docs/reference/api-reference/error-reference#p2025
         // Operation failed on not found entry
         if (error.code === "P2025") {
-          console.warn(error.message);
+          console.error(error.message);
         }
       }
 

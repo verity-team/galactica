@@ -4,6 +4,15 @@ import { PrismaModule } from "@/prisma/prisma.module";
 import { ConfigModule } from "@nestjs/config";
 import { InternalServerErrorException } from "@nestjs/common";
 
+import * as siwe from "siwe";
+
+// Re-exporting siwe module
+// This is required to spyOn functions import from an index file
+jest.mock("siwe", () => ({
+  __esModule: true,
+  ...jest.requireActual("siwe"),
+}));
+
 describe("AuthService", () => {
   let service: AuthService;
 
@@ -21,7 +30,7 @@ describe("AuthService", () => {
     expect(service).toBeDefined();
   });
 
-  // Get nonce
+  // getNonce()
   it("should return a nonce with 8+ characters", async () => {
     // Assumed that database operation is always successfull
     jest
@@ -34,12 +43,31 @@ describe("AuthService", () => {
     expect(nonce.length).toBeGreaterThanOrEqual(8);
   });
 
+  it("should throw error if generateNonce() keep throwing error", async () => {
+    // Assumed that database operation is always successfull
+    jest
+      .spyOn(service, "storeNonce")
+      .mockImplementation(async () => Promise.resolve(true));
+
+    jest.spyOn(siwe, "generateNonce").mockImplementation(() => {
+      throw new Error();
+    });
+
+    expect.assertions(1);
+    try {
+      await service.getNonce();
+    } catch (error) {
+      expect(error).toBeInstanceOf(InternalServerErrorException);
+    }
+  });
+
   it("should throw error if storeNonce() keep throwing error", async () => {
     // Immitate cannot store to database error
     jest
       .spyOn(service, "storeNonce")
       .mockImplementation(async () => Promise.resolve(false));
 
+    expect.assertions(1);
     try {
       await service.getNonce();
     } catch (error) {

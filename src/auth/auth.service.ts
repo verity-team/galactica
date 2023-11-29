@@ -8,6 +8,7 @@ import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
+import { sign } from "jsonwebtoken";
 
 @Injectable()
 export class AuthService {
@@ -20,11 +21,6 @@ export class AuthService {
     let retry = 3;
     let nonce = "";
 
-    // When using generateNonce(), there is a small chance for it to generate a less-then-8-char nonce
-    // It will throw error when that "small chance" occur
-
-    // When storing nonce, there is also a small chance for it to generate a duplicate nonce
-    // Prisma will throw error when that "small chance" occur
     while (retry > 0) {
       try {
         nonce = generateNonce();
@@ -32,6 +28,11 @@ export class AuthService {
         // Store nonce to database
         await this.prismaService.nonce.create({ data: { id: nonce } });
       } catch (error) {
+        // When using generateNonce(), there is a small chance for it to generate a less-then-8-char nonce
+        // generateNonce() will throw an error when that "small chance" occur
+
+        // When storing nonce, there is also a small chance for it to generate a duplicate nonce
+        // Prisma will throw an error when that it try to add duplicate nonce into the DB
         if (error instanceof PrismaClientKnownRequestError) {
           // Database error
           if (error.code === "P2002") {
@@ -54,13 +55,15 @@ export class AuthService {
       }
     }
 
-    throw new InternalServerErrorException("Cannot generate nonce");
+    throw new InternalServerErrorException(
+      "Cannot generate nonce. Please try again later",
+    );
   }
 
   async verifySignature({
     message,
     signature,
-  }: VerifySignatureDTO): Promise<boolean> {
+  }: VerifySignatureDTO): Promise<string> {
     const siweMessage = new SiweMessage(message);
 
     const isMessageValid = await this.verifySiweMessage(siweMessage);
@@ -97,10 +100,9 @@ export class AuthService {
       console.warn("Failed to delete nonce", siweMessage.nonce);
     }
 
-    // TODO: Return access token
-    // Flow: https://auth0.com/blog/sign-in-with-ethereum-siwe-now-available-on-auth0/
-
-    return true;
+    // Accept signature. Issue new access token for account
+    const accessToken = this.generateAccessToken(siweMessage.address);
+    return accessToken;
   }
 
   async verifySiweMessage(message: SiweMessage): Promise<boolean> {
@@ -130,6 +132,21 @@ export class AuthService {
     }
 
     return true;
+  }
+
+  generateAccessToken(walletAddress: string): string {
+    const payload = {
+      address: walletAddress,
+    };
+
+    const token = sign(payload, this.configService.get("jwtSecretKey"), {
+      issuer: "Truth Memes Galactica",
+      audience: "Truth Memes Galactica UI",
+      expiresIn: "1d",
+      notBefore: 0,
+    });
+
+    return token;
   }
 
   /**

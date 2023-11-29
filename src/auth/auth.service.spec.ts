@@ -2,9 +2,17 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "./auth.service";
 import { PrismaModule } from "@/prisma/prisma.module";
 import { ConfigModule } from "@nestjs/config";
-import { InternalServerErrorException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  InternalServerErrorException,
+} from "@nestjs/common";
+import configuration from "@root/config/configuration";
 
 import * as siwe from "siwe";
+import { eth } from "web3";
+import { randomBytes } from "crypto";
+import { verify } from "jsonwebtoken";
+import { Maybe } from "@/utils/types/util.type";
 
 // Re-exporting siwe module
 // This is required to spyOn functions import from an index file
@@ -13,13 +21,44 @@ jest.mock("siwe", () => ({
   ...jest.requireActual("siwe"),
 }));
 
+function createSiweMessage(
+  address: string,
+  issuedAt?: Maybe<string>,
+  expirationTime?: Maybe<string>,
+): siwe.SiweMessage {
+  const message = new siwe.SiweMessage({
+    domain: "localhost",
+    uri: "http://localhost/auth/verify",
+    address,
+    nonce: siwe.generateNonce(),
+    issuedAt,
+    expirationTime,
+    version: "1",
+    chainId: 1,
+  });
+  return message;
+}
+
+function createKeypair(): { publicKey: string; privateKey: string } {
+  const privateKey = `0x${randomBytes(32).toString("hex")}`;
+  const publicKey = eth.accounts.privateKeyToAddress(privateKey);
+  return { publicKey, privateKey };
+}
+
 describe("AuthService", () => {
   let service: AuthService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [AuthService],
-      imports: [PrismaModule, ConfigModule],
+      imports: [
+        PrismaModule,
+        ConfigModule.forRoot({
+          envFilePath: ".env",
+          isGlobal: true,
+          load: [configuration],
+        }),
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
@@ -73,5 +112,149 @@ describe("AuthService", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(InternalServerErrorException);
     }
+  });
+
+  // verifySignature()
+  it("should return an access token for valid signature", async () => {
+    // Mock database operations
+    jest
+      .spyOn(service, "isNonceIssued")
+      .mockImplementation(() => Promise.resolve(true));
+    jest
+      .spyOn(service, "deleteNonce")
+      .mockImplementation(() => Promise.resolve(true));
+
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const { publicKey, privateKey } = createKeypair();
+
+    const message = createSiweMessage(
+      publicKey,
+      now.toISOString(),
+      tomorrow.toISOString(),
+    );
+
+    const { signature } = eth.accounts.sign(
+      message.prepareMessage(),
+      privateKey,
+    );
+
+    const accessToken = await service.verifySignature({
+      message: message.prepareMessage(),
+      signature,
+    });
+    expect(accessToken).toBeDefined();
+
+    const isTokenValid = verify(accessToken, process.env.JWT_SECRET_KEY);
+    expect(isTokenValid).toBeDefined();
+  });
+
+  it("should throw Forbidden for invalid message", async () => {
+    // Mock database operations
+    jest
+      .spyOn(service, "isNonceIssued")
+      .mockImplementation(() => Promise.resolve(true));
+    jest
+      .spyOn(service, "deleteNonce")
+      .mockImplementation(() => Promise.resolve(true));
+
+    jest
+      .spyOn(service, "verifySiweMessage")
+      .mockImplementation(() => Promise.resolve(false));
+
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const { publicKey, privateKey } = createKeypair();
+
+    const message = createSiweMessage(
+      publicKey,
+      now.toISOString(),
+      tomorrow.toISOString(),
+    );
+
+    const { signature } = eth.accounts.sign(
+      message.prepareMessage(),
+      privateKey,
+    );
+
+    expect.assertions(1);
+    try {
+      await service.verifySignature({
+        message: message.prepareMessage(),
+        signature,
+      });
+    } catch (error) {
+      expect(error).toBeInstanceOf(ForbiddenException);
+    }
+  });
+
+  // verifySiweMessage()
+  it("should reject non-issuedAt message", async () => {
+    // Mock database operations
+    jest
+      .spyOn(service, "isNonceIssued")
+      .mockImplementation(() => Promise.resolve(true));
+    jest
+      .spyOn(service, "deleteNonce")
+      .mockImplementation(() => Promise.resolve(true));
+
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    const { publicKey } = createKeypair();
+
+    const message = createSiweMessage(
+      publicKey,
+      undefined,
+      tomorrow.toISOString(),
+    );
+
+    const isMessageValid = await service.verifySiweMessage(message);
+    expect(isMessageValid).toBe(false);
+  });
+
+  it("should reject non-expirationTime message", async () => {
+    // Mock database operations
+    jest
+      .spyOn(service, "isNonceIssued")
+      .mockImplementation(() => Promise.resolve(true));
+    jest
+      .spyOn(service, "deleteNonce")
+      .mockImplementation(() => Promise.resolve(true));
+
+    const now = new Date();
+
+    const { publicKey } = createKeypair();
+
+    const message = createSiweMessage(publicKey, now.toISOString(), undefined);
+
+    const isMessageValid = await service.verifySiweMessage(message);
+    expect(isMessageValid).toBe(false);
+  });
+
+  it("should reject too-long-TTL message", async () => {
+    // Mock database operations
+    jest
+      .spyOn(service, "isNonceIssued")
+      .mockImplementation(() => Promise.resolve(true));
+    jest
+      .spyOn(service, "deleteNonce")
+      .mockImplementation(() => Promise.resolve(true));
+
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000 + 1);
+
+    const { publicKey } = createKeypair();
+
+    const message = createSiweMessage(
+      publicKey,
+      now.toISOString(),
+      tomorrow.toISOString(),
+    );
+
+    const isMessageValid = await service.verifySiweMessage(message);
+    expect(isMessageValid).toBe(false);
   });
 });

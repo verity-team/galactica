@@ -1,7 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 import { AuthService } from "./auth.service";
 import { PrismaModule } from "@/prisma/prisma.module";
-import { ConfigModule } from "@nestjs/config";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 import {
   ForbiddenException,
   InternalServerErrorException,
@@ -47,8 +47,13 @@ function createKeypair(): { publicKey: string; privateKey: string } {
 
 describe("AuthService", () => {
   let service: AuthService;
+  let config: ConfigService;
 
   beforeEach(async () => {
+    process.env = {
+      JWT_SECRET_KEY: "SUPER_SECRET_KEY",
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [AuthService],
       imports: [
@@ -62,6 +67,8 @@ describe("AuthService", () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
+    config = module.get<ConfigService>(ConfigService);
+
     jest.resetAllMocks();
   });
 
@@ -146,7 +153,7 @@ describe("AuthService", () => {
     });
     expect(accessToken).toBeDefined();
 
-    const isTokenValid = verify(accessToken, process.env.JWT_SECRET_KEY);
+    const isTokenValid = verify(accessToken, config.get("jwtSecretKey"));
     expect(isTokenValid).toBeDefined();
   });
 

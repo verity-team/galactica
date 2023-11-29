@@ -9,11 +9,11 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       await this.$connect();
     } catch (error: any) {
       if (error instanceof PrismaClientInitializationError) {
-        console.warn("Prisma Client cannot be init. " + error.message);
+        console.error(`Prisma Client cannot be init. Error ${error.message}`);
         return;
       }
 
-      console.log("Unknown error. " + JSON.stringify(error));
+      console.error(`Unknown error. ${error.message}`);
     }
   }
 }

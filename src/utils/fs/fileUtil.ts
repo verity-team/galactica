@@ -22,7 +22,7 @@ export async function saveFile(
   try {
     await access(destination);
   } catch (error) {
-    console.warn("Path not exist. Abort current operation");
+    console.error(`Path ${destination} non-existent`);
     return null;
   }
 
@@ -33,7 +33,9 @@ export async function saveFile(
   try {
     const fileStat = await stat(filePath);
     if (fileStat) {
-      console.warn("File existed. Abort current operation", filePath);
+      console.error(
+        `File at ${filePath} existed. Cannot create file with the same name`,
+      );
       return null;
     }
   } catch {
@@ -43,7 +45,7 @@ export async function saveFile(
   try {
     await writeFile(filePath, file.buffer);
   } catch (error) {
-    console.warn("Error while writing file", error.message);
+    console.error(`Cannot write to ${filePath}. Error: ${error.message}`);
     return null;
   }
 
@@ -58,7 +60,7 @@ export async function removeFile(
   try {
     await access(destination);
   } catch (error) {
-    console.warn("Path not exist. Abort current operation");
+    console.error(`Path ${destination} non-existent`);
     return null;
   }
 
@@ -67,6 +69,7 @@ export async function removeFile(
   try {
     await stat(filePath);
   } catch {
+    console.error(`Path ${filePath} non-existent. No need to delete`);
     return null;
   }
 
@@ -74,7 +77,7 @@ export async function removeFile(
   try {
     await unlink(filePath);
   } catch (error) {
-    console.warn("Cannot delete file", filePath, "with error", error);
+    console.error(`Cannot delete ${filePath}. Error: ${error.message}`);
     return null;
   }
 

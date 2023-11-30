@@ -23,6 +23,9 @@ export class AuthGuard implements CanActivate {
 
     // Extract authorization header
     const accessToken = extractBearerToken(request);
+    if (!accessToken) {
+      return false;
+    }
 
     // Verify access token
     try {

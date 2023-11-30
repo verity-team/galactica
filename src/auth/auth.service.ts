@@ -1,5 +1,5 @@
 import {
-  ForbiddenException,
+  UnauthorizedException,
   Injectable,
   InternalServerErrorException,
 } from "@nestjs/common";
@@ -55,7 +55,7 @@ export class AuthService {
 
     const isMessageValid = await this.verifySiweMessage(siweMessage);
     if (!isMessageValid) {
-      throw new ForbiddenException(
+      throw new UnauthorizedException(
         "Invalid signature. Please try to sign-in again",
       );
     }
@@ -75,7 +75,7 @@ export class AuthService {
 
     // Handle verification errors (if any)
     if (result.error || !result.success) {
-      throw new ForbiddenException(
+      throw new UnauthorizedException(
         "Invalid signature. Please try to sign-in again",
       );
     }

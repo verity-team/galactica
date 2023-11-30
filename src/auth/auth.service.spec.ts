@@ -3,8 +3,8 @@ import { AuthService } from "./auth.service";
 import { PrismaModule } from "@/prisma/prisma.module";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import {
-  ForbiddenException,
   InternalServerErrorException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import configuration from "@root/config/configuration";
 
@@ -193,7 +193,7 @@ describe("AuthService", () => {
         signature,
       });
     } catch (error) {
-      expect(error).toBeInstanceOf(ForbiddenException);
+      expect(error).toBeInstanceOf(UnauthorizedException);
     }
   });
 

@@ -1,10 +1,11 @@
-import { IsEthereumAddress, IsString } from "class-validator";
+import { IsEthereumAddress, IsNotEmpty, IsString } from "class-validator";
 
 export class GetSiweMessageDTO {
   @IsString()
   @IsEthereumAddress()
   address: string;
 
+  @IsNotEmpty()
   @IsString()
   nonce: string;
 }

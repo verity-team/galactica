@@ -1,15 +1,15 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, UseGuards } from "@nestjs/common";
 import { DevService } from "./dev.service";
 import { GetSiweMessageDTO, GetSiweMessageResponse } from "./dev.type";
-import { NonProductionGuard } from "./dev.guard";
+import { NonEmptyBodyGuard, NonProductionGuard } from "./dev.guard";
 
 @Controller("dev")
-@UseGuards(NonProductionGuard)
+@UseGuards(NonProductionGuard, NonEmptyBodyGuard)
 export class DevController {
   constructor(private readonly devService: DevService) {}
 
-  @Get("siwe/message")
-  getSiweMessage(input: GetSiweMessageDTO): GetSiweMessageResponse {
+  @Post("siwe/message")
+  requestSiweMessage(@Body() input: GetSiweMessageDTO): GetSiweMessageResponse {
     const message = this.devService.getSiweMessage(input);
     return {
       message,

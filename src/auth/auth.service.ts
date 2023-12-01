@@ -168,9 +168,11 @@ export class AuthService {
         }
 
         console.error(error.message);
-        throw new InternalServerErrorException("Cannot generate nonce");
+        return false;
       }
     }
+
+    return true;
   }
 
   /**

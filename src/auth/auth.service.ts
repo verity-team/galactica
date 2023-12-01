@@ -2,6 +2,7 @@ import {
   UnauthorizedException,
   Injectable,
   InternalServerErrorException,
+  BadRequestException,
 } from "@nestjs/common";
 import { VerifySignatureDTO } from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
@@ -9,6 +10,7 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { sign } from "jsonwebtoken";
+import { Maybe } from "@/utils/types/util.type";
 
 @Injectable()
 export class AuthService {
@@ -51,7 +53,16 @@ export class AuthService {
     message,
     signature,
   }: VerifySignatureDTO): Promise<string> {
-    const siweMessage = new SiweMessage(message);
+    let siweMessage: Maybe<SiweMessage> = null;
+    try {
+      siweMessage = new SiweMessage(message);
+    } catch (error) {
+      throw new BadRequestException("Invalid message");
+    }
+
+    if (!siweMessage) {
+      throw new BadRequestException("Invalid message");
+    }
 
     const isMessageValid = await this.verifySiweMessage(siweMessage);
     if (!isMessageValid) {

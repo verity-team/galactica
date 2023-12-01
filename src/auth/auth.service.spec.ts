@@ -13,6 +13,7 @@ import { eth } from "web3";
 import { randomBytes } from "crypto";
 import { verify } from "jsonwebtoken";
 import { Maybe } from "@/utils/types/util.type";
+import { DAY_MS } from "@/utils/time";
 
 // Re-exporting siwe module
 // This is required to spyOn functions import from an index file
@@ -132,7 +133,7 @@ describe("AuthService", () => {
       .mockImplementation(() => Promise.resolve(true));
 
     const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrow = new Date(now.getTime() + DAY_MS);
 
     const { publicKey, privateKey } = createKeypair();
 
@@ -171,7 +172,7 @@ describe("AuthService", () => {
       .mockImplementation(() => Promise.resolve(false));
 
     const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrow = new Date(now.getTime() + DAY_MS);
 
     const { publicKey, privateKey } = createKeypair();
 
@@ -208,7 +209,7 @@ describe("AuthService", () => {
       .mockImplementation(() => Promise.resolve(true));
 
     const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrow = new Date(now.getTime() + DAY_MS);
 
     const { publicKey } = createKeypair();
 
@@ -251,7 +252,7 @@ describe("AuthService", () => {
       .mockImplementation(() => Promise.resolve(true));
 
     const now = new Date();
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000 + 1);
+    const tomorrow = new Date(now.getTime() + DAY_MS + 1);
 
     const { publicKey } = createKeypair();
 

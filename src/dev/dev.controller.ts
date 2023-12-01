@@ -1,8 +1,10 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, UseGuards } from "@nestjs/common";
 import { DevService } from "./dev.service";
 import { GetSiweMessageDTO, GetSiweMessageResponse } from "./dev.type";
+import { NonProductionGuard } from "./dev.guard";
 
 @Controller("dev")
+@UseGuards(NonProductionGuard)
 export class DevController {
   constructor(private readonly devService: DevService) {}
 

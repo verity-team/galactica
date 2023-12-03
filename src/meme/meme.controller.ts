@@ -14,6 +14,7 @@ import { UploadMemeDTO } from "./meme.types";
 import { EmptyResponse } from "src/utils/types/EmptyResponse";
 import { getMemeUploadOptions } from "./meme.config";
 import { AuthGuard } from "@/auth/guards/auth.guard";
+import { AddressThrottleGuard } from "@/auth/guards/address.guard";
 
 @Controller("meme")
 export class MemeController {
@@ -22,7 +23,7 @@ export class MemeController {
   @Post()
   @HttpCode(200)
   @UseInterceptors(FileInterceptor("fileName"))
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, AddressThrottleGuard)
   async uploadMeme(
     @UploadedFile(new ParseFilePipe(getMemeUploadOptions()))
     fileName: Express.Multer.File,

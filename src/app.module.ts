@@ -6,16 +6,14 @@ import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "./auth/auth.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { DevModule } from "./dev/dev.module";
-import configuration from "@root/config/configuration";
+import { ThrottlerModule } from "@nestjs/throttler";
+import { getConfigModuleConfig, getThrottlerModuleConfig } from "./app.config";
 
 @Module({
   controllers: [AppController],
   imports: [
-    ConfigModule.forRoot({
-      envFilePath: ".env",
-      isGlobal: true,
-      load: [configuration],
-    }),
+    ConfigModule.forRoot(getConfigModuleConfig()),
+    ThrottlerModule.forRoot(getThrottlerModuleConfig()),
     PrismaModule,
     MemeModule,
     AuthModule,

@@ -20,7 +20,7 @@ export class MemeService {
     private readonly config: ConfigService,
   ) {}
 
-  async uploadMeme(
+  public async uploadMeme(
     memeInfo: UploadMemeDTO,
     meme: Express.Multer.File,
   ): Promise<boolean> {

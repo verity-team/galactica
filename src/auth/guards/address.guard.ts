@@ -4,7 +4,9 @@ import { extractBearerToken } from "./auth.guard";
 import { decode } from "jsonwebtoken";
 
 /**
- * This Guard does not verify access token and is supceptible to attacks if not used with AuthGuard
+ * This Guard does not verify access token and is supceptible to attacks
+ *
+ * Consider using this Guard with AuthGuard to mitigate above risk
  */
 @Injectable()
 export class AddressThrottleGuard extends ThrottlerGuard {

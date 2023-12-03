@@ -22,23 +22,22 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getNonce(): Promise<string> {
-    let retry = 3;
+  public async getNonce(): Promise<string> {
     let nonce = "";
 
-    while (retry > 0) {
+    for (let retry = 3; retry > 0; retry--) {
       try {
-        nonce = generateNonce();
-
-        // Try to store nonce into database
-        const saved = await this.storeNonce(nonce);
-        if (!saved) {
-          throw new Error();
-        }
-      } catch (error) {
         // When using generateNonce(), there is a small chance for it to generate a less-then-8-char nonce
         // generateNonce() will throw an error when that "small chance" occur
-        this.logger.warn(`Nonce ${nonce} existed. Retrying...`);
+        nonce = generateNonce();
+      } catch (error) {
+        retry--;
+        continue;
+      }
+
+      // Try to store nonce into database
+      const saved = await this.storeNonce(nonce);
+      if (!saved) {
         retry--;
         continue;
       }
@@ -53,7 +52,7 @@ export class AuthService {
     );
   }
 
-  async verifySignature({
+  public async verifySignature({
     message,
     signature,
   }: VerifySignatureDTO): Promise<string> {

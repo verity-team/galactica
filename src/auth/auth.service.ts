@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   BadRequestException,
+  Logger,
 } from "@nestjs/common";
 import { VerifySignatureDTO } from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
@@ -14,6 +15,8 @@ import { Maybe } from "@/utils/types/util.type";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly configService: ConfigService,
@@ -95,7 +98,7 @@ export class AuthService {
     const deleted = await this.deleteNonce(siweMessage.nonce);
     if (!deleted) {
       // This error can be safely ignored
-      console.warn(`Failed to delete nonce: ${siweMessage.nonce}`);
+      this.logger.warn(`Failed to delete nonce: ${siweMessage.nonce}`);
     }
 
     // Accept signature. Issue new access token for account
@@ -174,11 +177,11 @@ export class AuthService {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
           // Database error: Nonce existed
-          console.error(error.message);
+          this.logger.error(error.message);
           return false;
         }
 
-        console.error(error.message);
+        this.logger.error(error.message);
         return false;
       }
     }
@@ -205,7 +208,7 @@ export class AuthService {
         // https://www.prisma.io/docs/reference/api-reference/error-reference#p2025
         // Operation failed on not found entry
         if (error.code === "P2025") {
-          console.error(error.message);
+          this.logger.error(error.message);
         }
       }
 

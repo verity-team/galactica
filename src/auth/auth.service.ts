@@ -38,6 +38,7 @@ export class AuthService {
       } catch (error) {
         // When using generateNonce(), there is a small chance for it to generate a less-then-8-char nonce
         // generateNonce() will throw an error when that "small chance" occur
+        this.logger.warn(`Nonce ${nonce} existed. Retrying...`);
         retry--;
         continue;
       }
@@ -95,11 +96,7 @@ export class AuthService {
     }
 
     // Delete nonce when the signature have been verified
-    const deleted = await this.deleteNonce(siweMessage.nonce);
-    if (!deleted) {
-      // This error can be safely ignored
-      this.logger.warn(`Failed to delete nonce: ${siweMessage.nonce}`);
-    }
+    await this.deleteNonce(siweMessage.nonce);
 
     // Accept signature. Issue new access token for account
     const accessToken = this.generateAccessToken(siweMessage.address);

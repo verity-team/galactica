@@ -3,8 +3,10 @@ import { Maybe } from "@/utils/types/util.type";
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Request } from "express";
 
-export function extractBearerToken(request: Request): Maybe<string> {
-  const authorizationHeader = request.headers.authorization;
+export function extractBearerToken(
+  request: Record<string, any>,
+): Maybe<string> {
+  const authorizationHeader = request.get("Authorization");
   if (!authorizationHeader) {
     return null;
   }

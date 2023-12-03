@@ -5,7 +5,7 @@ import { GetSiweMessageDTO } from "./dev.type";
 
 @Injectable()
 export class DevService {
-  getSiweMessage(messageInput: GetSiweMessageDTO): string {
+  public getSiweMessage(messageInput: GetSiweMessageDTO): string {
     const { address, nonce } = messageInput;
 
     const now = new Date();

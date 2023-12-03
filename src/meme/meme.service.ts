@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from "@nestjs/common";
 import { UploadMemeDTO } from "./meme.types";
 import { isAddress } from "viem";
@@ -12,18 +13,21 @@ import { ConfigService } from "@nestjs/config";
 
 @Injectable()
 export class MemeService {
+  private readonly logger = new Logger(MemeService.name);
+
   constructor(
     private readonly prismaService: PrismaService,
     private readonly config: ConfigService,
   ) {}
 
-  async uploadMeme(
+  public async uploadMeme(
     memeInfo: UploadMemeDTO,
     meme: Express.Multer.File,
   ): Promise<boolean> {
     try {
       this.verifyMemeInfo(memeInfo);
     } catch (error) {
+      this.logger.error(error.message);
       throw new BadRequestException(error.message);
     }
 
@@ -33,7 +37,7 @@ export class MemeService {
     if (fileName == null) {
       // Error while writing files to the system. Check logs to debug
       throw new InternalServerErrorException(
-        "Cannot save meme's image into the file system",
+        "Failed to upload meme. Please try again later",
       );
     }
 
@@ -46,7 +50,7 @@ export class MemeService {
 
       // Error while creating db entry. Check logs to debug
       throw new InternalServerErrorException(
-        "Cannot save meme's info into database",
+        "Failed to upload meme. Please try again later",
       );
     }
 
@@ -73,8 +77,7 @@ export class MemeService {
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
-        // TODO: Change to use a logger with better context
-        console.error(error.message);
+        this.logger.error(error.message);
         throw new BadRequestException(
           "Failed to save meme due to database error",
         );

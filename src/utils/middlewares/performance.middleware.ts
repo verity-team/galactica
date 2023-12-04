@@ -14,7 +14,9 @@ export function requestTimer(req: Request, res: Response, next: NextFunction) {
       logger.log(`${req.method} ${req.url}: OK - ${elapsedTime.toFixed(2)} ms`);
     } else {
       logger.log(
-        `${req.method} ${req.url}: FAILED. ${elapsedTime.toFixed(2)} ms`,
+        `${req.method} ${req.url}: FAILED ${
+          res.statusCode
+        }. ${elapsedTime.toFixed(2)} ms`,
       );
     }
   });

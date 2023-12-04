@@ -13,7 +13,9 @@ export function requestTimer(req: Request, res: Response, next: NextFunction) {
       // Consider to be a successful request
       logger.log(`${req.method} ${req.url}: OK - ${elapsedTime.toFixed(2)} ms`);
     } else {
-      logger.log(`${req.method} ${req.url}: FAILED. ${elapsedTime} ms`);
+      logger.log(
+        `${req.method} ${req.url}: FAILED. ${elapsedTime.toFixed(2)} ms`,
+      );
     }
   });
 }

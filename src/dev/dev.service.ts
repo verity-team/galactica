@@ -14,6 +14,7 @@ export class DevService {
     const message = new SiweMessage({
       domain: "localhost",
       uri: "http://localhost/auth",
+      statement: "Welcome to TruthMemes",
       address,
       nonce,
       issuedAt: now.toISOString(),

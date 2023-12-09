@@ -59,6 +59,13 @@ $ npm run test:cov
 - `POSTGRES_PASSWORD`: Password used for PostgresQL inside Docker
 - `POSTGRES_DB`: Database name used for PostgresQL inside Docker
 
+- `SHORT_LIMIT`: Allowed number of requests during `SHORT_TTL`. Default to 1
+- `SHORT_TTL`: A short time-to-live timespan in ms. Default to 1000 (1 second)
+- `LONG_LIMIT`: Allowed number of request during `LONG_TTL`. Default to 10
+- `LONG_TTL`: A long time-to-live timespan in ms. Default to 60000 (1 minute)
+
+- `JWT_SECRET_KEY`: A secret key to generate and to verify signatures
+
 ### Utility commands
 
 ```bash

@@ -19,7 +19,7 @@ export const getThrottlerModuleConfig = (): ThrottlerModuleOptions => {
   }
   let shortLimit = Number(process.env.SHORT_LIMIT);
   if (isNaN(shortLimit)) {
-    shortLimit = 2;
+    shortLimit = 1;
   }
 
   // Long limit default to 10 request/m if not configured

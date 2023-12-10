@@ -15,6 +15,8 @@ import { EmptyResponse } from "src/utils/types/EmptyResponse";
 import { getMemeUploadOptions } from "./meme.config";
 import { AuthGuard } from "@/auth/guards/auth.guard";
 import { AddressThrottleGuard } from "@/auth/guards/address.guard";
+import { Throttle } from "@nestjs/throttler";
+import { DAY_MS } from "@/utils/time";
 
 @Controller("meme")
 export class MemeController {
@@ -24,6 +26,7 @@ export class MemeController {
   @HttpCode(200)
   @UseInterceptors(FileInterceptor("fileName"))
   @UseGuards(AuthGuard, AddressThrottleGuard)
+  @Throttle({ default: { limit: 12, ttl: DAY_MS } })
   async uploadMeme(
     @UploadedFile(new ParseFilePipe(getMemeUploadOptions()))
     fileName: Express.Multer.File,

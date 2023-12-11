@@ -5,12 +5,15 @@ import {
   BadRequestException,
   Logger,
 } from "@nestjs/common";
-import { VerifySignatureDTO } from "./types/VerifySignature";
+import {
+  VerifyAccessTokenDTO,
+  VerifySignatureDTO,
+} from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
-import { sign } from "jsonwebtoken";
+import { decode, sign } from "jsonwebtoken";
 import { Maybe } from "@/utils/types/util.type";
 
 @Injectable()
@@ -100,6 +103,26 @@ export class AuthService {
     // Accept signature. Issue new access token for account
     const accessToken = this.generateAccessToken(siweMessage.address);
     return accessToken;
+  }
+
+  // Verifying access token validity using secret key and their exp will be done in AuthGuard
+  // This function only verify whether the access token's address is the same as the requesting address
+  public verifyAccessToken({
+    accessToken,
+    address,
+  }: VerifyAccessTokenDTO): boolean {
+    const payload = decode(accessToken, { json: true });
+
+    const tokenAddress = payload["address"];
+    if (tokenAddress == null) {
+      return false;
+    }
+
+    if (tokenAddress !== address) {
+      return false;
+    }
+
+    return true;
   }
 
   async verifySiweMessage(message: SiweMessage): Promise<boolean> {

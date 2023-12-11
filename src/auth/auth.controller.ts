@@ -4,15 +4,19 @@ import {
   Get,
   HttpCode,
   Post,
+  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { GetNonceResponse } from "./types/GetNonce";
 import {
+  VerifyAccessTokenDTO,
   VerifySignatureDTO,
   VerifySignatureResponse,
 } from "./types/VerifySignature";
 import { AddressThrottleGuard } from "./guards/address.guard";
+import { EmptyResponse } from "@/utils/types/EmptyResponse";
+import { AuthGuard } from "./guards/auth.guard";
 
 @Controller("auth")
 export class AuthController {
@@ -25,7 +29,7 @@ export class AuthController {
     return { nonce };
   }
 
-  @Post("verify")
+  @Post("verify/siwe")
   @HttpCode(200)
   async verifySignature(
     @Body() body: VerifySignatureDTO,
@@ -34,5 +38,17 @@ export class AuthController {
     return {
       accessToken,
     };
+  }
+
+  @Post("verify/jwt")
+  @HttpCode(200)
+  @UseGuards(AuthGuard)
+  verifyAccessToken(@Body() body: VerifyAccessTokenDTO): EmptyResponse {
+    const isValid = this.authService.verifyAccessToken(body);
+    if (!isValid) {
+      throw new UnauthorizedException("Invalid access token");
+    }
+
+    return {};
   }
 }

@@ -5,10 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from "@nestjs/common";
-import {
-  VerifyAccessTokenDTO,
-  VerifySignatureDTO,
-} from "./types/VerifySignature";
+import { VerifySignatureDTO } from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
@@ -118,10 +115,7 @@ export class AuthService {
 
   // Verifying access token validity using secret key and their exp will be done in AuthGuard
   // This function only verify whether the access token's address is the same as the requesting address
-  public verifyAccessToken({
-    accessToken,
-    address,
-  }: VerifyAccessTokenDTO): boolean {
+  public verifyAccessToken(accessToken: string, address: string): boolean {
     const payload = decode(accessToken, { json: true });
 
     const tokenAddress = payload["address"];

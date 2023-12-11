@@ -1,4 +1,4 @@
-import { IsEthereumAddress, IsJWT, IsNotEmpty } from "class-validator";
+import { IsEthereumAddress, IsNotEmpty } from "class-validator";
 
 export class VerifySignatureDTO {
   @IsNotEmpty()
@@ -15,7 +15,4 @@ export interface VerifySignatureResponse {
 export class VerifyAccessTokenDTO {
   @IsEthereumAddress()
   address: string;
-
-  @IsJWT()
-  accessToken: string;
 }

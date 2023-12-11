@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   Post,
+  Req,
   UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
@@ -16,7 +17,7 @@ import {
 } from "./types/VerifySignature";
 import { AddressThrottleGuard } from "./guards/address.guard";
 import { EmptyResponse } from "@/utils/types/EmptyResponse";
-import { AuthGuard } from "./guards/auth.guard";
+import { AuthGuard, extractBearerToken } from "./guards/auth.guard";
 
 @Controller("auth")
 export class AuthController {
@@ -43,8 +44,12 @@ export class AuthController {
   @Post("verify/jwt")
   @HttpCode(200)
   @UseGuards(AuthGuard)
-  verifyAccessToken(@Body() body: VerifyAccessTokenDTO): EmptyResponse {
-    const isValid = this.authService.verifyAccessToken(body);
+  verifyAccessToken(
+    @Req() request: Request,
+    @Body() { address }: VerifyAccessTokenDTO,
+  ): EmptyResponse {
+    const accessToken = extractBearerToken(request);
+    const isValid = this.authService.verifyAccessToken(accessToken, address);
     if (!isValid) {
       throw new UnauthorizedException("Invalid access token");
     }

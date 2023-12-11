@@ -84,9 +84,12 @@ describe("AuthService", () => {
       .spyOn(service, "storeNonce")
       .mockImplementation(async () => Promise.resolve(true));
 
-    const nonce = await service.getNonce();
+    const { nonce, issuedAt, expirationTime } = await service.getNonce();
 
     expect(nonce).toBeDefined();
+    expect(issuedAt).toBeDefined();
+    expect(expirationTime).toBeDefined();
+
     expect(nonce.length).toBeGreaterThanOrEqual(8);
   });
 

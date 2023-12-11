@@ -10,8 +10,11 @@ import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
-import { sign } from "jsonwebtoken";
+import { decode, sign } from "jsonwebtoken";
 import { Maybe } from "@/utils/types/util.type";
+import { prettyPrintError } from "@/utils/logging";
+import { DAY_MS } from "@/utils/time";
+import { GetNonceResponse } from "./types/GetNonce";
 
 @Injectable()
 export class AuthService {
@@ -22,7 +25,7 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  public async getNonce(): Promise<string> {
+  public async getNonce(): Promise<GetNonceResponse> {
     let nonce = "";
 
     for (let retry = 3; retry > 0; retry--) {
@@ -43,7 +46,14 @@ export class AuthService {
       }
 
       if (nonce !== "") {
-        return nonce;
+        const issuedAt = new Date();
+        const expirationTime = new Date(issuedAt.getTime() + DAY_MS);
+
+        return {
+          nonce,
+          issuedAt: issuedAt.toISOString(),
+          expirationTime: expirationTime.toISOString(),
+        };
       }
     }
 
@@ -60,6 +70,7 @@ export class AuthService {
     try {
       siweMessage = new SiweMessage(message);
     } catch (error) {
+      prettyPrintError(error);
       throw new BadRequestException("Invalid message");
     }
 
@@ -100,6 +111,23 @@ export class AuthService {
     // Accept signature. Issue new access token for account
     const accessToken = this.generateAccessToken(siweMessage.address);
     return accessToken;
+  }
+
+  // Verifying access token validity using secret key and their exp will be done in AuthGuard
+  // This function only verify whether the access token's address is the same as the requesting address
+  public verifyAccessToken(accessToken: string, address: string): boolean {
+    const payload = decode(accessToken, { json: true });
+
+    const tokenAddress = payload["address"];
+    if (tokenAddress == null) {
+      return false;
+    }
+
+    if (tokenAddress !== address) {
+      return false;
+    }
+
+    return true;
   }
 
   async verifySiweMessage(message: SiweMessage): Promise<boolean> {

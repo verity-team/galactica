@@ -26,7 +26,7 @@ export class AuthController {
   @UseGuards(AddressThrottleGuard)
   async getNonce(): Promise<GetNonceResponse> {
     const nonce = await this.authService.getNonce();
-    return { nonce };
+    return nonce;
   }
 
   @Post("verify/siwe")

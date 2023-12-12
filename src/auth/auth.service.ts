@@ -123,7 +123,7 @@ export class AuthService {
       return false;
     }
 
-    if (tokenAddress !== address) {
+    if (address.toLowerCase() !== tokenAddress.toLowerCase()) {
       return false;
     }
 

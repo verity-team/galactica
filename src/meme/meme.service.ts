@@ -35,7 +35,7 @@ export class MemeService {
     const destination = this.config.get<string>("imageDestination");
     const fileName = await saveFile(meme, destination);
     if (fileName == null) {
-      // Error while writing files to the system. Check logs to debug
+      this.logger.error("Failed to save meme into file system");
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
@@ -49,6 +49,7 @@ export class MemeService {
       await removeFile(fileName, destination);
 
       // Error while creating db entry. Check logs to debug
+      this.logger.error("Cannot save meme's metadata into database");
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
@@ -72,6 +73,7 @@ export class MemeService {
     fileId: string,
   ): Promise<boolean> {
     try {
+      memeInfo.tags = [...memeInfo.tags];
       await this.prismaService.memeUpload.create({
         data: { fileId, ...memeInfo },
       });
@@ -83,6 +85,7 @@ export class MemeService {
         );
       }
 
+      this.logger.error(error.message);
       throw new InternalServerErrorException(
         "Unknown error occur when saving meme",
       );

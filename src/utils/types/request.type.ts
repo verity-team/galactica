@@ -1,10 +1,5 @@
-import { IsPositive } from "class-validator";
-
 export class PaginationRequestDTO {
-  @IsPositive()
   offset: number;
-
-  @IsPositive()
   limit: number;
 }
 

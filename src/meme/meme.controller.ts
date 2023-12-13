@@ -3,16 +3,19 @@ import {
   Controller,
   Get,
   HttpCode,
+  Param,
   ParseFilePipe,
+  ParseIntPipe,
   Post,
   Query,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
 import { MemeService } from "./meme.service";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { GetMemeDTO, UploadMemeDTO } from "./meme.types";
+import { UploadMemeDTO } from "./meme.types";
 import { EmptyResponse } from "src/utils/types/EmptyResponse";
 import { getMemeUploadOptions } from "./meme.config";
 import { AuthGuard } from "@/auth/guards/auth.guard";
@@ -43,9 +46,17 @@ export class MemeController {
   @Get("latest")
   @HttpCode(200)
   @UseGuards(AuthGuard)
+  @UseInterceptors(ParseIntPipe)
   async getMeme(
-    @Query() pagination: GetMemeDTO,
+    @Query("offset", ParseIntPipe) offset: number,
+    @Query("limit", ParseIntPipe) limit: number,
   ): Promise<PaginationResponse<MemeUpload>> {
-    return await this.memeService.getMeme(pagination);
+    return await this.memeService.getMeme({ limit, offset });
+  }
+
+  @Get("image/:id")
+  async getMemeImage(@Param("id") fileId: string) {
+    const fileStream = await this.memeService.getMemeImage(fileId);
+    return new StreamableFile(fileStream);
   }
 }

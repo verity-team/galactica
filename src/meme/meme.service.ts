@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from "@nestjs/common";
 import { UploadMemeDTO } from "./meme.types";
 import { isAddress } from "viem";
@@ -15,6 +16,9 @@ import {
   PaginationResponse,
 } from "@/utils/types/request.type";
 import { MemeUpload } from "@prisma/client";
+import { join } from "path";
+import { stat } from "fs/promises";
+import { createReadStream } from "fs";
 
 @Injectable()
 export class MemeService {
@@ -84,6 +88,24 @@ export class MemeService {
         total: count,
       },
     };
+  }
+
+  public async getMemeImage(id: string) {
+    const filePath = join(process.cwd(), "images", id);
+    try {
+      await stat(filePath);
+    } catch (error) {
+      // Format file system errors to HTTP errors
+      if (error?.code === "ENOENT") {
+        throw new NotFoundException("Meme image not found");
+      }
+
+      throw new InternalServerErrorException(
+        "Unable to get meme image. Please try again later",
+      );
+    }
+
+    return createReadStream(filePath);
   }
 
   verifyMemeInfo(memeInfo: UploadMemeDTO): boolean {

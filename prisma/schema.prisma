@@ -14,11 +14,13 @@ model Nonce {
   id String @id
 }
 
-// Consider using lang and tags as ENUM to avoid unexpected values
+// Consider Enum for lang and tags to avoid unexpected values
 model MemeUpload {
-  fileId  String   @id
-  userId  String
-  caption String
-  lang    String
-  tags    String[]
+  fileId    String   @id
+  userId    String
+  caption   String
+  lang      String
+  tags      String[]
+  createdAt DateTime
+  updatedAt DateTime
 }

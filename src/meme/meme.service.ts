@@ -10,6 +10,11 @@ import { PrismaService } from "@/prisma/prisma.service";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { removeFile, saveFile } from "@/utils/fs/fileUtil";
 import { ConfigService } from "@nestjs/config";
+import {
+  PaginationRequestDTO,
+  PaginationResponse,
+} from "@/utils/types/request.type";
+import { MemeUpload } from "@prisma/client";
 
 @Injectable()
 export class MemeService {
@@ -56,6 +61,29 @@ export class MemeService {
     }
 
     return true;
+  }
+
+  public async getMeme({
+    offset,
+    limit,
+  }: PaginationRequestDTO): Promise<PaginationResponse<MemeUpload>> {
+    const count = await this.prismaService.memeUpload.count();
+    const memes = await this.prismaService.memeUpload.findMany({
+      orderBy: {
+        updatedAt: "desc",
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      data: memes,
+      pagination: {
+        offset,
+        limit,
+        total: count,
+      },
+    };
   }
 
   verifyMemeInfo(memeInfo: UploadMemeDTO): boolean {

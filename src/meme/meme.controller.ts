@@ -1,9 +1,14 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
+  Param,
   ParseFilePipe,
+  ParseIntPipe,
   Post,
+  Query,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -17,6 +22,8 @@ import { AuthGuard } from "@/auth/guards/auth.guard";
 import { AddressThrottleGuard } from "@/auth/guards/address.guard";
 import { Throttle } from "@nestjs/throttler";
 import { DAY_MS } from "@/utils/time";
+import { MemeUpload } from "@prisma/client";
+import { PaginationResponse } from "@/utils/types/request.type";
 
 @Controller("meme")
 export class MemeController {
@@ -34,5 +41,21 @@ export class MemeController {
   ): Promise<EmptyResponse> {
     await this.memeService.uploadMeme(body, fileName);
     return {};
+  }
+
+  @Get("latest")
+  @HttpCode(200)
+  @UseInterceptors(ParseIntPipe)
+  async getMeme(
+    @Query("offset", ParseIntPipe) offset: number,
+    @Query("limit", ParseIntPipe) limit: number,
+  ): Promise<PaginationResponse<MemeUpload>> {
+    return await this.memeService.getMeme({ limit, offset });
+  }
+
+  @Get("image/:id")
+  async getMemeImage(@Param("id") fileId: string) {
+    const fileStream = await this.memeService.getMemeImage(fileId);
+    return new StreamableFile(fileStream);
   }
 }

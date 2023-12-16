@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from "@nestjs/common";
 import { UploadMemeDTO } from "./meme.types";
 import { isAddress } from "viem";
@@ -10,6 +11,14 @@ import { PrismaService } from "@/prisma/prisma.service";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { removeFile, saveFile } from "@/utils/fs/fileUtil";
 import { ConfigService } from "@nestjs/config";
+import {
+  PaginationRequestDTO,
+  PaginationResponse,
+} from "@/utils/types/request.type";
+import { MemeUpload } from "@prisma/client";
+import { join } from "path";
+import { stat } from "fs/promises";
+import { createReadStream } from "fs";
 
 @Injectable()
 export class MemeService {
@@ -35,7 +44,7 @@ export class MemeService {
     const destination = this.config.get<string>("imageDestination");
     const fileName = await saveFile(meme, destination);
     if (fileName == null) {
-      // Error while writing files to the system. Check logs to debug
+      this.logger.error("Failed to save meme into file system");
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
@@ -49,12 +58,54 @@ export class MemeService {
       await removeFile(fileName, destination);
 
       // Error while creating db entry. Check logs to debug
+      this.logger.error("Cannot save meme's metadata into database");
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
     }
 
     return true;
+  }
+
+  public async getMeme({
+    offset,
+    limit,
+  }: PaginationRequestDTO): Promise<PaginationResponse<MemeUpload>> {
+    const count = await this.prismaService.memeUpload.count();
+    const memes = await this.prismaService.memeUpload.findMany({
+      orderBy: {
+        updatedAt: "desc",
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      data: memes,
+      pagination: {
+        offset,
+        limit,
+        total: count,
+      },
+    };
+  }
+
+  public async getMemeImage(id: string) {
+    const filePath = join(process.cwd(), "images", id);
+    try {
+      await stat(filePath);
+    } catch (error) {
+      // Format file system errors to HTTP errors
+      if (error?.code === "ENOENT") {
+        throw new NotFoundException("Meme image not found");
+      }
+
+      throw new InternalServerErrorException(
+        "Unable to get meme image. Please try again later",
+      );
+    }
+
+    return createReadStream(filePath);
   }
 
   verifyMemeInfo(memeInfo: UploadMemeDTO): boolean {
@@ -72,8 +123,13 @@ export class MemeService {
     fileId: string,
   ): Promise<boolean> {
     try {
+      memeInfo.tags = [...memeInfo.tags];
       await this.prismaService.memeUpload.create({
-        data: { fileId, ...memeInfo },
+        data: {
+          ...memeInfo,
+          fileId,
+          userId: memeInfo.userId.toLowerCase(),
+        },
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
@@ -83,6 +139,7 @@ export class MemeService {
         );
       }
 
+      this.logger.error(error.message);
       throw new InternalServerErrorException(
         "Unknown error occur when saving meme",
       );

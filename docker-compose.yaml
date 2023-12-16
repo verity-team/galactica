@@ -30,6 +30,16 @@ services:
     volumes:
       - dbdata:/var/lib/postgresql/data
 
+  dbms:
+    image: dpage/pgadmin4
+    container_name: galactica-dbms
+    environment:
+      - PGADMIN_DEFAULT_EMAIL
+      - PGADMIN_DEFAULT_PASSWORD
+      - PGADMIN_LISTEN_PORT=8088
+    ports:
+      - 8088:8088
+
 volumes:
   dbdata:
   node_modules:

@@ -125,7 +125,11 @@ export class MemeService {
     try {
       memeInfo.tags = [...memeInfo.tags];
       await this.prismaService.memeUpload.create({
-        data: { fileId, ...memeInfo },
+        data: {
+          ...memeInfo,
+          fileId,
+          userId: memeInfo.userId.toLowerCase(),
+        },
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {

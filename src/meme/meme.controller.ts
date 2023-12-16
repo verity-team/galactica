@@ -45,7 +45,6 @@ export class MemeController {
 
   @Get("latest")
   @HttpCode(200)
-  @UseGuards(AuthGuard)
   @UseInterceptors(ParseIntPipe)
   async getMeme(
     @Query("offset", ParseIntPipe) offset: number,

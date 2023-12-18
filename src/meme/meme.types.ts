@@ -1,3 +1,7 @@
+import { MemeUploadStatus } from "@prisma/client";
+import { Transform } from "class-transformer";
+import { IsEnum } from "class-validator";
+
 export class UploadMemeDTO {
   userId: string;
 
@@ -10,4 +14,10 @@ export class UploadMemeDTO {
 
   // TODO: Limit for caption
   caption: string;
+}
+
+export class UpdateMemeStatusDTO {
+  @Transform(({ value }) => ("" + value).toUpperCase())
+  @IsEnum(MemeUploadStatus)
+  status: MemeUploadStatus;
 }

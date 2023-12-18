@@ -15,7 +15,7 @@ import {
   PaginationRequestDTO,
   PaginationResponse,
 } from "@/utils/types/request.type";
-import { MemeUpload, Status } from "@prisma/client";
+import { MemeUpload, MemeUploadStatus } from "@prisma/client";
 import { join } from "path";
 import { stat } from "fs/promises";
 import { createReadStream } from "fs";
@@ -73,6 +73,9 @@ export class MemeService {
   }: PaginationRequestDTO): Promise<PaginationResponse<MemeUpload>> {
     const count = await this.prismaService.memeUpload.count();
     const memes = await this.prismaService.memeUpload.findMany({
+      where: {
+        status: MemeUploadStatus.APPROVED,
+      },
       orderBy: {
         updatedAt: "desc",
       },
@@ -129,7 +132,7 @@ export class MemeService {
           ...memeInfo,
           fileId,
           userId: memeInfo.userId.toLowerCase(),
-          status: Status.PENDING,
+          status: MemeUploadStatus.PENDING,
         },
       });
     } catch (error) {

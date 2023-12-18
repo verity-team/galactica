@@ -5,7 +5,10 @@ import {
   BadRequestException,
   Logger,
 } from "@nestjs/common";
-import { VerifySignatureDTO } from "./types/VerifySignature";
+import {
+  AccessTokenPayload,
+  VerifySignatureDTO,
+} from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
@@ -159,8 +162,9 @@ export class AuthService {
   }
 
   generateAccessToken(walletAddress: string): string {
-    const payload = {
+    const payload: AccessTokenPayload = {
       address: walletAddress,
+      role: "user",
     };
 
     const token = sign(payload, this.configService.get("jwtSecretKey"), {
@@ -190,7 +194,7 @@ export class AuthService {
     return true;
   }
 
-  async storeNonce(nonce: string, expirationTime: string): Promise<boolean> {
+  async storeNonce(nonce: string, expirationTime: Date): Promise<boolean> {
     try {
       // Store nonce to database
       await this.prismaService.nonce.create({

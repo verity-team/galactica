@@ -15,7 +15,7 @@ import {
   PaginationRequestDTO,
   PaginationResponse,
 } from "@/utils/types/request.type";
-import { MemeUpload } from "@prisma/client";
+import { MemeUpload, Status } from "@prisma/client";
 import { join } from "path";
 import { stat } from "fs/promises";
 import { createReadStream } from "fs";
@@ -129,6 +129,7 @@ export class MemeService {
           ...memeInfo,
           fileId,
           userId: memeInfo.userId.toLowerCase(),
+          status: Status.PENDING,
         },
       });
     } catch (error) {

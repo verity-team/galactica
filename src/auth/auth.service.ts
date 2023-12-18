@@ -37,17 +37,17 @@ export class AuthService {
         continue;
       }
 
+      const issuedAt = new Date();
+      const expirationTime = new Date(issuedAt.getTime() + DAY_MS);
+
       // Try to store nonce into database
-      const saved = await this.storeNonce(nonce);
+      const saved = await this.storeNonce(nonce, expirationTime);
       if (!saved) {
         retry--;
         continue;
       }
 
       if (nonce !== "") {
-        const issuedAt = new Date();
-        const expirationTime = new Date(issuedAt.getTime() + DAY_MS);
-
         return {
           nonce,
           issuedAt: issuedAt.toISOString(),
@@ -190,10 +190,12 @@ export class AuthService {
     return true;
   }
 
-  async storeNonce(nonce: string): Promise<boolean> {
+  async storeNonce(nonce: string, expirationTime: string): Promise<boolean> {
     try {
       // Store nonce to database
-      await this.prismaService.nonce.create({ data: { id: nonce } });
+      await this.prismaService.nonce.create({
+        data: { id: nonce, expirationTime },
+      });
     } catch (error) {
       // When storing nonce, there is also a small chance for it to generate a duplicate nonce
       // Prisma will throw an error when that it try to add duplicate nonce into the DB

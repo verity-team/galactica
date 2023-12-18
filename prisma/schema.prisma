@@ -10,8 +10,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Status {
+  PENDING
+  APPROVED
+  DENIED
+}
+
 model Nonce {
-  id String @id
+  id             String   @id
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  expirationTime DateTime
 }
 
 // Consider Enum for lang and tags to avoid unexpected values
@@ -21,6 +30,7 @@ model MemeUpload {
   caption   String
   lang      String
   tags      String[]
+  status    Status
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now())
 }

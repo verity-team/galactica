@@ -12,7 +12,6 @@ import * as siwe from "siwe";
 import { eth } from "web3";
 import { randomBytes } from "crypto";
 import { verify } from "jsonwebtoken";
-import { Maybe } from "@/utils/types/util.type";
 import { DAY_MS } from "@/utils/time";
 
 // Re-exporting siwe module

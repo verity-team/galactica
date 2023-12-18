@@ -11,7 +11,6 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { decode, sign } from "jsonwebtoken";
-import { Maybe } from "@/utils/types/util.type";
 import { prettyPrintError } from "@/utils/logging";
 import { DAY_MS } from "@/utils/time";
 import { GetNonceResponse } from "./types/GetNonce";

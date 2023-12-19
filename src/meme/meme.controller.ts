@@ -35,8 +35,9 @@ export class MemeController {
   @Post()
   @HttpCode(200)
   @UseInterceptors(FileInterceptor("fileName"))
-  @UseGuards(AuthGuard, AddressThrottleGuard)
+  @UseGuards(AuthGuard, AddressThrottleGuard, RoleGuard)
   @Throttle({ default: { limit: 12, ttl: DAY_MS } })
+  @Roles(["user"])
   async uploadMeme(
     @UploadedFile(new ParseFilePipe(getMemeUploadOptions()))
     fileName: Express.Multer.File,
@@ -63,8 +64,8 @@ export class MemeController {
   }
 
   @Patch(":id/status")
-  @UseGuards(AuthGuard, RoleGuard)
-  @Roles("admin")
+  // @UseGuards(AuthGuard, RoleGuard)
+  @Roles(["admin"])
   async updateMemeStatus(
     @Param("id") memeId: string,
     @Body() { status }: UpdateMemeStatusDTO,

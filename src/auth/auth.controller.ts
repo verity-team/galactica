@@ -9,17 +9,18 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { AuthService } from "./auth.service";
-import { GetNonceResponse } from "./types/GetNonce";
-import {
-  AccessTokenPayload,
-  VerifySignatureDTO,
-  VerifySignatureResponse,
-} from "./types/VerifySignature";
 import { AddressThrottleGuard } from "./guards/address.guard";
 import { EmptyResponse } from "@/utils/types/EmptyResponse";
 import { AuthGuard, extractBearerToken } from "./guards/auth.guard";
 import { RoleGuard } from "./guards/role.guard";
 import { Roles } from "./decorators/role.decorator";
+import {
+  GetNonceResponse,
+  VerifySignatureDTO,
+  AccessTokenResponse,
+  AccessTokenPayload,
+} from "./types";
+import { SignInWithCredentialsDTO } from "./types/SignInWithCredentials";
 
 @Controller("auth")
 export class AuthController {
@@ -36,7 +37,7 @@ export class AuthController {
   @HttpCode(200)
   async verifySignature(
     @Body() body: VerifySignatureDTO,
-  ): Promise<VerifySignatureResponse> {
+  ): Promise<AccessTokenResponse> {
     const accessToken = await this.authService.verifySignature(body);
     return {
       accessToken,
@@ -46,7 +47,7 @@ export class AuthController {
   @Post("verify/jwt")
   @HttpCode(200)
   @UseGuards(AuthGuard, RoleGuard)
-  @Roles("user")
+  @Roles(["user"])
   verifyAccessToken(
     @Req() request: Request,
     @Body() { address }: AccessTokenPayload,
@@ -58,5 +59,15 @@ export class AuthController {
     }
 
     return {};
+  }
+
+  @Post("signin")
+  @HttpCode(200)
+  async signInWithCredentials(
+    @Body() credentials: SignInWithCredentialsDTO,
+  ): Promise<AccessTokenResponse> {
+    const accessToken =
+      await this.authService.signInWithCredentials(credentials);
+    return { accessToken };
   }
 }

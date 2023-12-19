@@ -17,6 +17,8 @@ import { decode, sign } from "jsonwebtoken";
 import { prettyPrintError } from "@/utils/logging";
 import { DAY_MS } from "@/utils/time";
 import { GetNonceResponse } from "./types/GetNonce";
+import { SignInWithCredentialsDTO } from "./types/SignInWithCredentials";
+import { createHmac } from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -132,6 +134,38 @@ export class AuthService {
     return true;
   }
 
+  public async signInWithCredentials(
+    credentials: SignInWithCredentialsDTO,
+  ): Promise<string> {
+    const { username, password } = credentials;
+
+    try {
+      const admin = await this.prismaService.admin.findFirstOrThrow({
+        where: { username },
+      });
+
+      const secret = this.configService.get("jwtSecretKey");
+      const hashPassword = createHmac("sha256", secret)
+        .update(password)
+        .digest("hex");
+      if (hashPassword !== admin.password) {
+        throw new Error();
+      }
+
+      const accessToken = this.generateAdminAccessToken(username);
+      return accessToken;
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          this.logger.error("Cannot find admin with username", username);
+        }
+      }
+
+      this.logger.error("Unexpected error", JSON.stringify(error, null, 2));
+      throw new UnauthorizedException("Invalid credentials");
+    }
+  }
+
   async verifySiweMessage(message: SiweMessage): Promise<boolean> {
     // Check if the nonce is issued by the server
     const nonce = message.nonce;
@@ -167,10 +201,29 @@ export class AuthService {
       role: "user",
     };
 
-    const token = sign(payload, this.configService.get("jwtSecretKey"), {
+    const secret = this.configService.get("jwtSecretKey");
+    const token = sign(payload, secret, {
       issuer: "Truth Memes Galactica",
       audience: "Truth Memes Galactica UI",
       expiresIn: "1d",
+      notBefore: 0,
+    });
+
+    return token;
+  }
+
+  generateAdminAccessToken(username: string): string {
+    const hexUsername = Buffer.from(username).toString("hex");
+    const payload: AccessTokenPayload = {
+      address: `0x${hexUsername}`,
+      role: "admin",
+    };
+
+    const secret = this.configService.get("jwtSecretKey");
+    const token = sign(payload, secret, {
+      issuer: "Truth Memes Galactica",
+      audience: "Truth Memes Galactica UI",
+      expiresIn: "12h",
       notBefore: 0,
     });
 

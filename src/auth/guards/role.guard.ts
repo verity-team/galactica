@@ -1,12 +1,19 @@
-import { CanActivate, ExecutionContext, Logger } from "@nestjs/common";
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { extractBearerToken } from "./auth.guard";
 import { decode } from "jsonwebtoken";
+import { Roles } from "../decorators/role.decorator";
 
+@Injectable()
 export class RoleGuard implements CanActivate {
-  private readonly logger = new Logger(RoleGuard.name);
-
   constructor(private readonly reflector: Reflector) {}
+
+  private readonly logger = new Logger(RoleGuard.name);
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -18,12 +25,8 @@ export class RoleGuard implements CanActivate {
       return false;
     }
 
-    const requestedRoles = this.reflector.get<string[]>(
-      "roles",
-      context.getHandler(),
-    );
-
-    if (requestedRoles.length === 0) {
+    const requestedRoles = this.reflector.get(Roles, context.getHandler());
+    if (!requestedRoles || requestedRoles.length === 0) {
       return true;
     }
 

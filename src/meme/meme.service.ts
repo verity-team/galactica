@@ -71,10 +71,9 @@ export class MemeService {
     offset,
     limit,
   }: PaginationRequestDTO): Promise<PaginationResponse<MemeUpload>> {
-    const count = await this.prismaService.memeUpload.count();
     const memes = await this.prismaService.memeUpload.findMany({
       where: {
-        status: MemeUploadStatus.APPROVED,
+        status: MemeUploadStatus.PENDING,
       },
       orderBy: {
         updatedAt: "desc",
@@ -88,7 +87,7 @@ export class MemeService {
       pagination: {
         offset,
         limit,
-        total: count,
+        total: memes.length,
       },
     };
   }

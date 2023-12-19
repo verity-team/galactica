@@ -8,10 +8,6 @@ export class VerifySignatureDTO {
   signature: string;
 }
 
-export interface VerifySignatureResponse {
-  accessToken: string;
-}
-
 export class AccessTokenPayload {
   @IsEthereumAddress()
   address: string;

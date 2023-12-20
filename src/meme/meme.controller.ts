@@ -23,7 +23,7 @@ import { AuthGuard } from "@/auth/guards/auth.guard";
 import { AddressThrottleGuard } from "@/auth/guards/address.guard";
 import { Throttle } from "@nestjs/throttler";
 import { DAY_MS } from "@/utils/time";
-import { MemeUpload } from "@prisma/client";
+import { MemeUpload, MemeUploadStatus } from "@prisma/client";
 import { PaginationResponse } from "@/utils/types/request.type";
 import { RoleGuard } from "@/auth/guards/role.guard";
 import { Roles } from "@/auth/decorators/role.decorator";
@@ -53,8 +53,9 @@ export class MemeController {
   async getMeme(
     @Query("offset", ParseIntPipe) offset: number,
     @Query("limit", ParseIntPipe) limit: number,
+    @Query("status") status?: MemeUploadStatus,
   ): Promise<PaginationResponse<MemeUpload>> {
-    return await this.memeService.getMeme({ limit, offset });
+    return await this.memeService.getMeme({ limit, offset }, { status });
   }
 
   @Get("image/:id")
@@ -64,13 +65,12 @@ export class MemeController {
   }
 
   @Patch(":id/status")
-  // @UseGuards(AuthGuard, RoleGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(["admin"])
   async updateMemeStatus(
     @Param("id") memeId: string,
     @Body() { status }: UpdateMemeStatusDTO,
   ) {
-    console.log(memeId);
-    console.log(status);
+    await this.memeService.updateMemeStatus(memeId, status);
   }
 }

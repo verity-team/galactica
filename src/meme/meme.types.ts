@@ -21,3 +21,7 @@ export class UpdateMemeStatusDTO {
   @IsEnum(MemeUploadStatus)
   status: MemeUploadStatus;
 }
+
+export interface MemeFilter {
+  status?: MemeUploadStatus;
+}

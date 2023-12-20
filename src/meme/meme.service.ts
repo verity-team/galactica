@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { UploadMemeDTO } from "./meme.types";
+import { MemeFilter, UploadMemeDTO } from "./meme.types";
 import { isAddress } from "viem";
 import { PrismaService } from "@/prisma/prisma.service";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
@@ -34,7 +34,7 @@ export class MemeService {
     meme: Express.Multer.File,
   ): Promise<boolean> {
     try {
-      this.verifyMemeInfo(memeInfo);
+      this.validateMemeInfo(memeInfo);
     } catch (error) {
       this.logger.error(error.message);
       throw new BadRequestException(error.message);
@@ -67,10 +67,15 @@ export class MemeService {
     return true;
   }
 
-  public async getMeme({
-    offset,
-    limit,
-  }: PaginationRequestDTO): Promise<PaginationResponse<MemeUpload>> {
+  public async getMeme(
+    { offset, limit }: PaginationRequestDTO,
+    filter?: MemeFilter,
+  ): Promise<PaginationResponse<MemeUpload>> {
+    const count = await this.prismaService.memeUpload.count({
+      where: {
+        status: filter?.status ?? "PENDING",
+      },
+    });
     const memes = await this.prismaService.memeUpload.findMany({
       where: {
         status: MemeUploadStatus.PENDING,
@@ -87,7 +92,7 @@ export class MemeService {
       pagination: {
         offset,
         limit,
-        total: memes.length,
+        total: count,
       },
     };
   }
@@ -110,11 +115,49 @@ export class MemeService {
     return createReadStream(filePath);
   }
 
-  verifyMemeInfo(memeInfo: UploadMemeDTO): boolean {
-    const { userId } = memeInfo;
+  public async updateMemeStatus(
+    id: string,
+    status: MemeUploadStatus,
+  ): Promise<boolean> {
+    try {
+      await this.prismaService.memeUpload.update({
+        where: {
+          fileId: id,
+        },
+        data: {
+          status,
+        },
+      });
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        this.logger.error("Prisma error:", JSON.stringify(error, null, 2));
+        return false;
+      }
 
+      this.logger.error("Unknown database error", error);
+      return false;
+    }
+
+    // Return success even if there are no update to the target object
+    return true;
+  }
+
+  validateMemeInfo(memeInfo: UploadMemeDTO): boolean {
+    const { userId, tags } = memeInfo;
+
+    // userId must be a Ethereum wallet address
     if (!isAddress(userId)) {
       throw new Error("Invalid userId. Not a wallet address.");
+    }
+
+    // In case where there is only one tag, form data return tags as a string, not a string array
+    const isTagsArray = Array.isArray(memeInfo.tags);
+    const isTagsString = typeof tags === "string" || tags instanceof String;
+    if (!isTagsArray && isTagsString) {
+      // Format tags to always be a string array (in case it's a string)
+      memeInfo.tags = [memeInfo.tags as unknown as string];
+    } else {
+      return false;
     }
 
     return true;
@@ -125,7 +168,6 @@ export class MemeService {
     fileId: string,
   ): Promise<boolean> {
     try {
-      memeInfo.tags = [...memeInfo.tags];
       await this.prismaService.memeUpload.create({
         data: {
           ...memeInfo,

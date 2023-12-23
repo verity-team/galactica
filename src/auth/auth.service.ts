@@ -182,7 +182,6 @@ export class AuthService {
         .update(password)
         .digest("hex");
 
-      console.log(password, hashPassword, foundAdmin.password);
       if (hashPassword !== foundAdmin.password) {
         throw new Error();
       }

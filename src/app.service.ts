@@ -24,7 +24,6 @@ export class AppService {
   private async getDatabaseReadyStatus(): Promise<boolean> {
     try {
       const result = await this.prismaService.$queryRaw`SELECT 1`;
-      console.log(result);
       if (!result) {
         return false;
       }

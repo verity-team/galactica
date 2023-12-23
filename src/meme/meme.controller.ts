@@ -55,7 +55,6 @@ export class MemeController {
     @Query("limit", ParseIntPipe) limit: number,
     @Query("status") status?: MemeUploadStatus,
   ): Promise<PaginationResponse<MemeUpload>> {
-    console.log(status);
     return await this.memeService.getMeme({ limit, offset }, { status });
   }
 

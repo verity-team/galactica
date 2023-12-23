@@ -55,6 +55,7 @@ export class MemeController {
     @Query("limit", ParseIntPipe) limit: number,
     @Query("status") status?: MemeUploadStatus,
   ): Promise<PaginationResponse<MemeUpload>> {
+    console.log(status);
     return await this.memeService.getMeme({ limit, offset }, { status });
   }
 
@@ -65,7 +66,7 @@ export class MemeController {
   }
 
   @Patch(":id/status")
-  @UseGuards(AuthGuard, RoleGuard)
+  // @UseGuards(AuthGuard, RoleGuard)
   @Roles(["admin"])
   async updateMemeStatus(
     @Param("id") memeId: string,

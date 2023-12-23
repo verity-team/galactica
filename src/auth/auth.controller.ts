@@ -44,16 +44,35 @@ export class AuthController {
     };
   }
 
-  @Post("verify/jwt")
+  @Post("verify/user")
   @HttpCode(200)
   @UseGuards(AuthGuard, RoleGuard)
   @Roles(["user"])
-  verifyAccessToken(
+  verifyUserAccessToken(
     @Req() request: Request,
     @Body() { address }: AccessTokenPayload,
   ): EmptyResponse {
     const accessToken = extractBearerToken(request);
-    const isValid = this.authService.verifyAccessToken(accessToken, address);
+    const isValid = this.authService.verifyUserAccessToken(
+      accessToken,
+      address,
+    );
+    if (!isValid) {
+      throw new UnauthorizedException("Invalid access token");
+    }
+
+    return {};
+  }
+
+  @Post("verify/admin")
+  @HttpCode(200)
+  @UseGuards(AuthGuard, RoleGuard)
+  @Roles(["admin"])
+  async verifyAdminAccessToken(
+    @Req() request: Request,
+  ): Promise<EmptyResponse> {
+    const accessToken = extractBearerToken(request);
+    const isValid = await this.authService.verifyAdminAccessToken(accessToken);
     if (!isValid) {
       throw new UnauthorizedException("Invalid access token");
     }

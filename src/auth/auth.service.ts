@@ -119,15 +119,48 @@ export class AuthService {
 
   // Verifying access token validity using secret key and their exp will be done in AuthGuard
   // This function only verify whether the access token's address is the same as the requesting address
-  public verifyAccessToken(accessToken: string, address: string): boolean {
+  public verifyUserAccessToken(accessToken: string, address: string): boolean {
     const payload = decode(accessToken, { json: true });
 
     const tokenAddress = payload["address"];
-    if (tokenAddress == null) {
+    if (
+      tokenAddress == null ||
+      !(tokenAddress instanceof String) ||
+      !(typeof tokenAddress !== "string")
+    ) {
       return false;
     }
 
     if (address.toLowerCase() !== tokenAddress.toLowerCase()) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public async verifyAdminAccessToken(accessToken: string): Promise<boolean> {
+    const payload = decode(accessToken, { json: true });
+
+    const address = payload["address"];
+    if (
+      address == null ||
+      !(address instanceof String) ||
+      !(typeof address !== "string")
+    ) {
+      return false;
+    }
+
+    // Remove 0x prefix
+    const hexUsername = address.slice(2);
+    const username = Buffer.from(hexUsername, "hex").toString("utf8");
+    try {
+      await this.prismaService.admin.findFirstOrThrow({
+        where: {
+          username,
+        },
+      });
+    } catch (error) {
+      this.logger.error(JSON.stringify(error, null, 2));
       return false;
     }
 

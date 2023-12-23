@@ -73,12 +73,12 @@ export class MemeService {
   ): Promise<PaginationResponse<MemeUpload>> {
     const count = await this.prismaService.memeUpload.count({
       where: {
-        status: filter?.status ?? "PENDING",
+        status: filter?.status ?? "APPROVED",
       },
     });
     const memes = await this.prismaService.memeUpload.findMany({
       where: {
-        status: MemeUploadStatus.PENDING,
+        status: filter?.status ?? "APPROVED",
       },
       orderBy: {
         updatedAt: "desc",

@@ -1,5 +1,4 @@
 import { verifyJwtAsync } from "@/utils/token";
-import { Maybe } from "@/utils/types/util.type";
 import {
   CanActivate,
   ExecutionContext,

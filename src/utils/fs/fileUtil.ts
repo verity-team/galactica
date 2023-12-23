@@ -1,7 +1,6 @@
 import { access, stat, unlink, writeFile } from "fs/promises";
 import * as mime from "mime";
 import { v4 as uuidv4 } from "uuid";
-import { Maybe } from "../types/util.type";
 
 /**
  *

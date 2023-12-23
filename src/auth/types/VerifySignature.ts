@@ -1,4 +1,4 @@
-import { IsEthereumAddress, IsNotEmpty } from "class-validator";
+import { IsEthereumAddress, IsNotEmpty, IsString } from "class-validator";
 
 export class VerifySignatureDTO {
   @IsNotEmpty()
@@ -8,11 +8,10 @@ export class VerifySignatureDTO {
   signature: string;
 }
 
-export interface VerifySignatureResponse {
-  accessToken: string;
-}
-
-export class VerifyAccessTokenDTO {
+export class AccessTokenPayload {
   @IsEthereumAddress()
   address: string;
+
+  @IsString()
+  role: Role;
 }

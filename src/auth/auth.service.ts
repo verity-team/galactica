@@ -5,16 +5,20 @@ import {
   BadRequestException,
   Logger,
 } from "@nestjs/common";
-import { VerifySignatureDTO } from "./types/VerifySignature";
+import {
+  AccessTokenPayload,
+  VerifySignatureDTO,
+} from "./types/VerifySignature";
 import { SiweMessage, generateNonce } from "siwe";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { decode, sign } from "jsonwebtoken";
-import { Maybe } from "@/utils/types/util.type";
 import { prettyPrintError } from "@/utils/logging";
 import { DAY_MS } from "@/utils/time";
 import { GetNonceResponse } from "./types/GetNonce";
+import { SignInWithCredentialsDTO } from "./types/SignInWithCredentials";
+import { createHmac } from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -38,17 +42,17 @@ export class AuthService {
         continue;
       }
 
+      const issuedAt = new Date();
+      const expirationTime = new Date(issuedAt.getTime() + DAY_MS);
+
       // Try to store nonce into database
-      const saved = await this.storeNonce(nonce);
+      const saved = await this.storeNonce(nonce, expirationTime);
       if (!saved) {
         retry--;
         continue;
       }
 
       if (nonce !== "") {
-        const issuedAt = new Date();
-        const expirationTime = new Date(issuedAt.getTime() + DAY_MS);
-
         return {
           nonce,
           issuedAt: issuedAt.toISOString(),
@@ -115,11 +119,15 @@ export class AuthService {
 
   // Verifying access token validity using secret key and their exp will be done in AuthGuard
   // This function only verify whether the access token's address is the same as the requesting address
-  public verifyAccessToken(accessToken: string, address: string): boolean {
+  public verifyUserAccessToken(accessToken: string, address: string): boolean {
     const payload = decode(accessToken, { json: true });
 
     const tokenAddress = payload["address"];
-    if (tokenAddress == null) {
+    if (
+      tokenAddress == null ||
+      !(tokenAddress instanceof String) ||
+      !(typeof tokenAddress !== "string")
+    ) {
       return false;
     }
 
@@ -128,6 +136,69 @@ export class AuthService {
     }
 
     return true;
+  }
+
+  public async verifyAdminAccessToken(accessToken: string): Promise<boolean> {
+    const payload = decode(accessToken, { json: true });
+
+    const address = payload["address"];
+    if (
+      address == null ||
+      !(address instanceof String) ||
+      !(typeof address !== "string")
+    ) {
+      return false;
+    }
+
+    // Remove 0x prefix
+    const hexUsername = address.slice(2);
+    const username = Buffer.from(hexUsername, "hex").toString("utf8");
+    try {
+      await this.prismaService.admin.findFirstOrThrow({
+        where: {
+          username,
+        },
+      });
+    } catch (error) {
+      this.logger.error(JSON.stringify(error, null, 2));
+      return false;
+    }
+
+    return true;
+  }
+
+  public async signInWithCredentials(
+    credentials: SignInWithCredentialsDTO,
+  ): Promise<string> {
+    const { username, password } = credentials;
+
+    try {
+      const foundAdmin = await this.prismaService.admin.findFirstOrThrow({
+        where: { username },
+      });
+
+      const secret = this.configService.get("jwtSecretKey");
+      const hashPassword = createHmac("sha256", secret)
+        .update(password)
+        .digest("hex");
+
+      console.log(password, hashPassword, foundAdmin.password);
+      if (hashPassword !== foundAdmin.password) {
+        throw new Error();
+      }
+
+      const accessToken = this.generateAdminAccessToken(username);
+      return accessToken;
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        if (error.code === "P2025") {
+          this.logger.error("Cannot find admin with username", username);
+        }
+      }
+
+      this.logger.error("Unexpected error", JSON.stringify(error, null, 2));
+      throw new UnauthorizedException("Invalid credentials");
+    }
   }
 
   async verifySiweMessage(message: SiweMessage): Promise<boolean> {
@@ -160,14 +231,34 @@ export class AuthService {
   }
 
   generateAccessToken(walletAddress: string): string {
-    const payload = {
+    const payload: AccessTokenPayload = {
       address: walletAddress,
+      role: "user",
     };
 
-    const token = sign(payload, this.configService.get("jwtSecretKey"), {
+    const secret = this.configService.get("jwtSecretKey");
+    const token = sign(payload, secret, {
       issuer: "Truth Memes Galactica",
       audience: "Truth Memes Galactica UI",
       expiresIn: "1d",
+      notBefore: 0,
+    });
+
+    return token;
+  }
+
+  generateAdminAccessToken(username: string): string {
+    const hexUsername = Buffer.from(username).toString("hex");
+    const payload: AccessTokenPayload = {
+      address: `0x${hexUsername}`,
+      role: "admin",
+    };
+
+    const secret = this.configService.get("jwtSecretKey");
+    const token = sign(payload, secret, {
+      issuer: "Truth Memes Galactica",
+      audience: "Truth Memes Galactica UI",
+      expiresIn: "12h",
       notBefore: 0,
     });
 
@@ -191,10 +282,12 @@ export class AuthService {
     return true;
   }
 
-  async storeNonce(nonce: string): Promise<boolean> {
+  async storeNonce(nonce: string, expirationTime: Date): Promise<boolean> {
     try {
       // Store nonce to database
-      await this.prismaService.nonce.create({ data: { id: nonce } });
+      await this.prismaService.nonce.create({
+        data: { id: nonce, expirationTime },
+      });
     } catch (error) {
       // When storing nonce, there is also a small chance for it to generate a duplicate nonce
       // Prisma will throw an error when that it try to add duplicate nonce into the DB

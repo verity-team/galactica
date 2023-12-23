@@ -173,7 +173,7 @@ export class AuthService {
     const { username, password } = credentials;
 
     try {
-      const admin = await this.prismaService.admin.findFirstOrThrow({
+      const foundAdmin = await this.prismaService.admin.findFirstOrThrow({
         where: { username },
       });
 
@@ -181,7 +181,9 @@ export class AuthService {
       const hashPassword = createHmac("sha256", secret)
         .update(password)
         .digest("hex");
-      if (hashPassword !== admin.password) {
+
+      console.log(password, hashPassword, foundAdmin.password);
+      if (hashPassword !== foundAdmin.password) {
         throw new Error();
       }
 

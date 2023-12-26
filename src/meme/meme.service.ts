@@ -97,6 +97,26 @@ export class MemeService {
     };
   }
 
+  public async getSingleMeme(id: string): Promise<MemeUpload> {
+    try {
+      const foundMeme = await this.prismaService.memeUpload.findFirst({
+        where: { fileId: id, status: "APPROVED" },
+      });
+      if (foundMeme == null) {
+        throw new NotFoundException("Meme not existed");
+      }
+      return foundMeme;
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError) {
+        this.logger.error("Prisma error:", JSON.stringify(error, null, 2));
+        throw new InternalServerErrorException("Database unavailable");
+      }
+
+      this.logger.error("Unknown error", JSON.stringify(error, null, 2));
+      throw error;
+    }
+  }
+
   public async getMemeImage(id: string) {
     const filePath = join(process.cwd(), "images", id);
     try {

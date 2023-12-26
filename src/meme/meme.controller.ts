@@ -64,8 +64,14 @@ export class MemeController {
     return new StreamableFile(fileStream);
   }
 
+  @Get(":id")
+  @HttpCode(200)
+  async getSingleMeme(@Param("id") fileId: string): Promise<MemeUpload> {
+    return await this.memeService.getSingleMeme(fileId);
+  }
+
   @Patch(":id/status")
-  // @UseGuards(AuthGuard, RoleGuard)
+  @UseGuards(AuthGuard, RoleGuard)
   @Roles(["admin"])
   async updateMemeStatus(
     @Param("id") memeId: string,

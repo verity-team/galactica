@@ -1,9 +1,8 @@
-import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Post, UseGuards } from "@nestjs/common";
 import { DevService } from "./dev.service";
 import { GetSiweMessageDTO, GetSiweMessageResponse } from "./dev.type";
 import { NonEmptyBodyGuard, NonProductionGuard } from "./dev.guard";
 import { SkipThrottle } from "@nestjs/throttler";
-import { AddressThrottleGuard } from "@/auth/guards/address.guard";
 import { SignInWithCredentialsDTO } from "@/auth/types/SignInWithCredentials";
 import { EmptyResponse } from "@/utils/types/EmptyResponse";
 
@@ -13,7 +12,7 @@ import { EmptyResponse } from "@/utils/types/EmptyResponse";
 export class DevController {
   constructor(private readonly devService: DevService) {}
 
-  @Post("/siwe-message")
+  @Post("siwe-message")
   @UseGuards(NonEmptyBodyGuard)
   requestSiweMessage(@Body() input: GetSiweMessageDTO): GetSiweMessageResponse {
     const message = this.devService.getSiweMessage(input);
@@ -22,13 +21,7 @@ export class DevController {
     };
   }
 
-  @Get("rate-limit-test")
-  @UseGuards(AddressThrottleGuard)
-  testRateLimit() {
-    return { message: "Hello, World" };
-  }
-
-  @Post("/sign-up-admin")
+  @Post("sign-up-admin")
   @UseGuards(NonEmptyBodyGuard)
   async requestAdminAccount(
     @Body() credientials: SignInWithCredentialsDTO,

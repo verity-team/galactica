@@ -20,7 +20,7 @@ View [Note](#notes) section for more info.
 $ npx prisma generate
 ```
 
-## Running the app
+## Running the server for development
 
 ```bash
 # development watch mode
@@ -31,6 +31,24 @@ $ npm run docker:start
 
 # stop docker mode
 $ npm run docker:stop
+```
+
+## Building the server for production
+
+- Remember to set `NODE_ENV` to `production`
+
+- Remember to set `DATABASE_URL` to your desired Postgres database
+
+```bash
+# Build the server
+npm run build
+
+# Run the server file using npm script
+npm run start:prod
+
+# or with Node.js
+
+node dist/src/main
 ```
 
 ## Test

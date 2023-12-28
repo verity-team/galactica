@@ -11,7 +11,7 @@ export const getConfigModuleConfig = (): ConfigModuleOptions => {
 };
 
 export const getThrottlerModuleConfig = (): ThrottlerModuleOptions => {
-  // Short limit default to 2 requests/s if not configured
+  // Short limit default to 10 requests/s if not configured
   let shortTTL = Number(process.env.SHORT_TTL);
   if (isNaN(shortTTL)) {
     // 1 second
@@ -19,10 +19,10 @@ export const getThrottlerModuleConfig = (): ThrottlerModuleOptions => {
   }
   let shortLimit = Number(process.env.SHORT_LIMIT);
   if (isNaN(shortLimit)) {
-    shortLimit = 1;
+    shortLimit = 10;
   }
 
-  // Long limit default to 10 request/m if not configured
+  // Long limit default to 20 request/m if not configured
   let longTTL = Number(process.env.LONG_TTL);
   if (isNaN(longTTL)) {
     // 1 minute
@@ -30,7 +30,7 @@ export const getThrottlerModuleConfig = (): ThrottlerModuleOptions => {
   }
   let longLimit = Number(process.env.LONG_LIMIT);
   if (isNaN(longLimit)) {
-    longLimit = 10;
+    longLimit = 20;
   }
 
   return {

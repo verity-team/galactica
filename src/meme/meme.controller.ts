@@ -22,7 +22,7 @@ import { getMemeUploadOptions } from "./meme.config";
 import { AuthGuard } from "@/auth/guards/auth.guard";
 import { AddressThrottleGuard } from "@/auth/guards/address.guard";
 import { Throttle } from "@nestjs/throttler";
-import { DAY_MS } from "@/utils/time";
+import { DAY_MS, MINUTE_MS } from "@/utils/time";
 import { MemeUpload, MemeUploadStatus } from "@prisma/client";
 import { PaginationResponse } from "@/utils/types/request.type";
 import { RoleGuard } from "@/auth/guards/role.guard";
@@ -50,6 +50,7 @@ export class MemeController {
   @Get("latest")
   @HttpCode(200)
   @UseInterceptors(ParseIntPipe)
+  @UseGuards(AddressThrottleGuard)
   async getMeme(
     @Query("offset", ParseIntPipe) offset: number,
     @Query("limit", ParseIntPipe) limit: number,
@@ -59,13 +60,16 @@ export class MemeController {
   }
 
   @Get("image/:id")
-  async getMemeImage(@Param("id") fileId: string) {
+  @UseGuards(AddressThrottleGuard)
+  @Throttle({ default: { limit: 100, ttl: MINUTE_MS } })
+  async getMemeImage(@Param("id") fileId: string): Promise<StreamableFile> {
     const fileStream = await this.memeService.getMemeImage(fileId);
     return new StreamableFile(fileStream);
   }
 
   @Get(":id")
   @HttpCode(200)
+  @UseGuards(AddressThrottleGuard)
   async getSingleMeme(@Param("id") fileId: string): Promise<MemeUpload> {
     return await this.memeService.getSingleMeme(fileId);
   }

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   Param,
   ParseFilePipe,
@@ -62,6 +63,7 @@ export class MemeController {
   @Get("image/:id")
   @UseGuards(AddressThrottleGuard)
   @Throttle({ default: { limit: 100, ttl: MINUTE_MS } })
+  @Header("Cache-Control", "max-age=86400")
   async getMemeImage(@Param("id") fileId: string): Promise<StreamableFile> {
     const fileStream = await this.memeService.getMemeImage(fileId);
     return new StreamableFile(fileStream);

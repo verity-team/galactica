@@ -19,6 +19,7 @@ import { DAY_MS } from "@/utils/time";
 import { GetNonceResponse } from "./types/GetNonce";
 import { SignInWithCredentialsDTO } from "./types/SignInWithCredentials";
 import { createHmac } from "crypto";
+import { isString } from "class-validator";
 
 @Injectable()
 export class AuthService {
@@ -142,17 +143,14 @@ export class AuthService {
     const payload = decode(accessToken, { json: true });
 
     const address = payload["address"];
-    if (
-      address == null ||
-      !(address instanceof String) ||
-      !(typeof address !== "string")
-    ) {
+    if (address == null || !isString(address)) {
       return false;
     }
 
     // Remove 0x prefix
     const hexUsername = address.slice(2);
     const username = Buffer.from(hexUsername, "hex").toString("utf8");
+
     try {
       await this.prismaService.admin.findFirstOrThrow({
         where: {

@@ -60,6 +60,15 @@ export class MemeController {
     return await this.memeService.getMeme({ limit, offset }, { status });
   }
 
+  @Get("preview")
+  @HttpCode(200)
+  async getMemePreview(): Promise<PaginationResponse<MemeUpload>> {
+    return await this.memeService.getMeme(
+      { limit: 10, offset: 0 },
+      { status: "APPROVED" },
+    );
+  }
+
   @Get("image/:id")
   @UseGuards(AddressThrottleGuard)
   @Throttle({ default: { limit: 100, ttl: MINUTE_MS } })

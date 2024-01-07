@@ -124,11 +124,7 @@ export class AuthService {
     const payload = decode(accessToken, { json: true });
 
     const tokenAddress = payload["address"];
-    if (
-      tokenAddress == null ||
-      !(tokenAddress instanceof String) ||
-      !(typeof tokenAddress !== "string")
-    ) {
+    if (tokenAddress == null) {
       return false;
     }
 
@@ -235,10 +231,7 @@ export class AuthService {
 
     const secret = this.configService.get("jwtSecretKey");
     const token = sign(payload, secret, {
-      issuer: "Truth Memes Galactica",
-      audience: "Truth Memes Galactica UI",
       expiresIn: "1d",
-      notBefore: 0,
     });
 
     return token;

@@ -18,7 +18,6 @@ import {
   GetNonceResponse,
   VerifySignatureDTO,
   AccessTokenResponse,
-  AccessTokenPayload,
 } from "./types";
 import { SignInWithCredentialsDTO } from "./types/SignInWithCredentials";
 
@@ -50,7 +49,7 @@ export class AuthController {
   @Roles(["user"])
   verifyUserAccessToken(
     @Req() request: Request,
-    @Body() { address }: AccessTokenPayload,
+    @Body() { address }: { address: string },
   ): EmptyResponse {
     const accessToken = extractBearerToken(request);
     const isValid = this.authService.verifyUserAccessToken(

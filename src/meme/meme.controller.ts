@@ -4,6 +4,7 @@ import {
   Get,
   Header,
   HttpCode,
+  Inject,
   Param,
   ParseFilePipe,
   ParseIntPipe,
@@ -22,16 +23,22 @@ import { EmptyResponse } from "src/utils/types/EmptyResponse";
 import { getMemeUploadOptions } from "./meme.config";
 import { AuthGuard } from "@/auth/guards/auth.guard";
 import { AddressThrottleGuard } from "@/auth/guards/address.guard";
-import { Throttle } from "@nestjs/throttler";
+import { Throttle, hours } from "@nestjs/throttler";
 import { DAY_MS, MINUTE_MS } from "@/utils/time";
 import { MemeUpload, MemeUploadStatus } from "@prisma/client";
 import { PaginationResponse } from "@/utils/types/request.type";
 import { RoleGuard } from "@/auth/guards/role.guard";
 import { Roles } from "@/auth/decorators/role.decorator";
+import { Cache } from "cache-manager";
+import { PREVIEW_MEMES_CACHE_KEY } from "@/utils/const";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 
 @Controller("meme")
 export class MemeController {
-  constructor(private readonly memeService: MemeService) {}
+  constructor(
+    private readonly memeService: MemeService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+  ) {}
 
   @Post()
   @HttpCode(200)
@@ -58,6 +65,29 @@ export class MemeController {
     @Query("status") status?: MemeUploadStatus,
   ): Promise<PaginationResponse<MemeUpload>> {
     return await this.memeService.getMeme({ limit, offset }, { status });
+  }
+
+  @Get("preview")
+  @HttpCode(200)
+  @Header("Cache-Control", "max-age=43200")
+  async getMemePreview(): Promise<PaginationResponse<MemeUpload>> {
+    let previewMemes: Maybe<PaginationResponse<MemeUpload>> =
+      await this.cacheManager.get(PREVIEW_MEMES_CACHE_KEY);
+
+    if (previewMemes != null) {
+      return previewMemes;
+    }
+
+    previewMemes = await this.memeService.getMeme(
+      { limit: 10, offset: 0 },
+      { status: "APPROVED" },
+    );
+    await this.cacheManager.set(
+      PREVIEW_MEMES_CACHE_KEY,
+      previewMemes,
+      hours(1),
+    );
+    return previewMemes;
   }
 
   @Get("image/:id")

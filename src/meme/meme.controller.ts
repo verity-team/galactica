@@ -28,10 +28,15 @@ import { MemeUpload, MemeUploadStatus } from "@prisma/client";
 import { PaginationResponse } from "@/utils/types/request.type";
 import { RoleGuard } from "@/auth/guards/role.guard";
 import { Roles } from "@/auth/decorators/role.decorator";
+import { Cache } from "cache-manager";
+import { PREVIEW_MEMES_CACHE_KEY } from "@/utils/const";
 
 @Controller("meme")
 export class MemeController {
-  constructor(private readonly memeService: MemeService) {}
+  constructor(
+    private readonly memeService: MemeService,
+    private readonly cacheManager: Cache,
+  ) {}
 
   @Post()
   @HttpCode(200)
@@ -62,11 +67,21 @@ export class MemeController {
 
   @Get("preview")
   @HttpCode(200)
+  @Header("Cache-Control", "max-age=43200")
   async getMemePreview(): Promise<PaginationResponse<MemeUpload>> {
-    return await this.memeService.getMeme(
+    let previewMemes: Maybe<PaginationResponse<MemeUpload>> =
+      await this.cacheManager.get(PREVIEW_MEMES_CACHE_KEY);
+
+    if (previewMemes != null) {
+      return previewMemes;
+    }
+
+    previewMemes = await this.memeService.getMeme(
       { limit: 10, offset: 0 },
       { status: "APPROVED" },
     );
+    await this.cacheManager.set(PREVIEW_MEMES_CACHE_KEY, previewMemes, 43200);
+    return previewMemes;
   }
 
   @Get("image/:id")

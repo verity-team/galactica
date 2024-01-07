@@ -8,12 +8,14 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { DevModule } from "./dev/dev.module";
 import { ThrottlerModule } from "@nestjs/throttler";
 import { getConfigModuleConfig, getThrottlerModuleConfig } from "./app.config";
+import { CacheModule } from "@nestjs/cache-manager";
 
 @Module({
   controllers: [AppController],
   imports: [
     ConfigModule.forRoot(getConfigModuleConfig()),
     ThrottlerModule.forRoot(getThrottlerModuleConfig()),
+    CacheModule.register({ isGlobal: true }),
     PrismaModule,
     MemeModule,
     AuthModule,

@@ -42,6 +42,17 @@ export class MemeService {
       throw new BadRequestException(error.message);
     }
 
+    const fileHash = this.createHashFromFile(meme);
+    const foundMeme = await this.prismaService.memeUpload.findFirst({
+      where: {
+        userId: memeInfo.userId.toLowerCase(),
+        fileHash,
+      },
+    });
+    if (foundMeme != null) {
+      throw new ConflictException("Cannot upload the same meme twice");
+    }
+
     // Save image into file system
     const destination = this.config.get<string>("imageDestination");
     const fileName = await saveFile(meme, destination);
@@ -50,14 +61,6 @@ export class MemeService {
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
-    }
-
-    const fileHash = this.createHashFromFile(meme);
-    const foundImage = await this.prismaService.memeUpload.findFirst({
-      where: { userId: memeInfo.userId, fileHash },
-    });
-    if (foundImage) {
-      throw new ConflictException("Cannot upload the same meme twice");
     }
 
     try {
@@ -86,7 +89,7 @@ export class MemeService {
   ): Promise<boolean> {
     const fileHash = this.createHashFromFile(file);
 
-    const foundImage = await this.prismaService.memeUpload.findFirst({
+    const foundImage = await this.prismaService.memeUpload.findMany({
       where: { userId, fileHash },
     });
     if (foundImage) {

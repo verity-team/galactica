@@ -7,7 +7,7 @@ RUN npm ci
 
 COPY . .
 
-RUN mkdir images
+RUN mkdir -p images
 
 CMD [ "npm", "run", "start:dev" ]
 EXPOSE 8000:8000

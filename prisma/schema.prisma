@@ -26,6 +26,7 @@ model Nonce {
 // Consider Enum for lang and tags to avoid unexpected values
 model MemeUpload {
   fileId    String           @id
+  fileHash  String
   userId    String
   caption   String
   lang      String

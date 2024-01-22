@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -19,6 +20,7 @@ import { MemeUpload, MemeUploadStatus } from "@prisma/client";
 import { join } from "path";
 import { stat } from "fs/promises";
 import { createReadStream } from "fs";
+import { createHash } from "crypto";
 
 @Injectable()
 export class MemeService {
@@ -50,9 +52,20 @@ export class MemeService {
       );
     }
 
+    const fileHash = this.createHashFromFile(meme);
+    const foundImage = await this.prismaService.memeUpload.findFirst({
+      where: { userId: memeInfo.userId, fileHash },
+    });
+    if (foundImage) {
+      throw new ConflictException("Cannot upload the same meme twice");
+    }
+
     try {
-      // Add uploadInfo into db, along with reference to fs image
-      await this.saveMemeInfo(memeInfo, fileName);
+      // Add meme information to the database
+      await this.saveMemeInfo(memeInfo, {
+        fileId: fileName,
+        fileHash,
+      });
     } catch {
       // Rollback image in fs
       await removeFile(fileName, destination);
@@ -65,6 +78,22 @@ export class MemeService {
     }
 
     return true;
+  }
+
+  public async isDuplicateMeme(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<boolean> {
+    const fileHash = this.createHashFromFile(file);
+
+    const foundImage = await this.prismaService.memeUpload.findFirst({
+      where: { userId, fileHash },
+    });
+    if (foundImage) {
+      return true;
+    }
+
+    return false;
   }
 
   public async getMeme(
@@ -185,13 +214,14 @@ export class MemeService {
 
   async saveMemeInfo(
     memeInfo: UploadMemeDTO,
-    fileId: string,
+    { fileId, fileHash }: { fileId: string; fileHash: string },
   ): Promise<boolean> {
     try {
       await this.prismaService.memeUpload.create({
         data: {
           ...memeInfo,
           fileId,
+          fileHash,
           userId: memeInfo.userId.toLowerCase(),
           status: MemeUploadStatus.PENDING,
         },
@@ -211,5 +241,11 @@ export class MemeService {
     }
 
     return true;
+  }
+
+  createHashFromFile(file: Express.Multer.File) {
+    const hasher = createHash("SHA256");
+    hasher.update(file.buffer);
+    return hasher.digest("hex");
   }
 }

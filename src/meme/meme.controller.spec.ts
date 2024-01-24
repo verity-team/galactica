@@ -5,6 +5,7 @@ import { PrismaModule } from "@/prisma/prisma.module";
 import { ConfigModule } from "@nestjs/config";
 import { getThrottlerModuleConfig } from "@/app.config";
 import { ThrottlerModule } from "@nestjs/throttler";
+import { CACHE_MANAGER } from "@nestjs/cache-manager";
 
 describe("MemeController", () => {
   let controller: MemeController;
@@ -12,7 +13,7 @@ describe("MemeController", () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MemeController],
-      providers: [MemeService],
+      providers: [MemeService, { provide: CACHE_MANAGER, useValue: {} }],
       imports: [
         PrismaModule,
         ConfigModule,

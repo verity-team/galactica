@@ -3,7 +3,6 @@ import {
   Injectable,
   InternalServerErrorException,
   BadRequestException,
-  Logger,
 } from "@nestjs/common";
 import {
   AccessTokenPayload,
@@ -14,16 +13,16 @@ import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 import { PrismaService } from "@/prisma/prisma.service";
 import { ConfigService } from "@nestjs/config";
 import { decode, sign } from "jsonwebtoken";
-import { prettyPrintError } from "@/utils/logging";
 import { DAY_MS } from "@/utils/time";
 import { GetNonceResponse } from "./types/GetNonce";
 import { SignInWithCredentialsDTO } from "./types/SignInWithCredentials";
 import { createHmac } from "crypto";
 import { isString } from "class-validator";
+import { LoggerService } from "@/logger/logger.service";
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly logger = new LoggerService(AuthService.name);
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -75,16 +74,25 @@ export class AuthService {
     try {
       siweMessage = new SiweMessage(message);
     } catch (error) {
-      prettyPrintError(error);
+      this.logger.error(
+        `Cannot verify signature ${JSON.stringify(error)}`,
+        error.stack,
+      );
       throw new BadRequestException("Invalid message");
     }
 
     if (!siweMessage) {
+      this.logger.log(
+        "FAILED: Cannot generate SIWE message from user's message",
+      );
       throw new BadRequestException("Invalid message");
     }
 
     const isMessageValid = await this.verifySiweMessage(siweMessage);
     if (!isMessageValid) {
+      this.logger.log(
+        "FAILED: User SIWE message does not match with server requirements",
+      );
       throw new UnauthorizedException(
         "Invalid signature. Please try to sign-in again",
       );
@@ -105,6 +113,9 @@ export class AuthService {
 
     // Handle verification errors (if any)
     if (result.error || !result.success) {
+      this.logger.log(
+        "FAILED: User signature is rejected by SIWE verification",
+      );
       throw new UnauthorizedException(
         "Invalid signature. Please try to sign-in again",
       );
@@ -154,7 +165,7 @@ export class AuthService {
         },
       });
     } catch (error) {
-      this.logger.error(JSON.stringify(error, null, 2));
+      this.logger.error(JSON.stringify(error, null, 2), error.stack);
       return false;
     }
 
@@ -185,11 +196,17 @@ export class AuthService {
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2025") {
-          this.logger.error("Cannot find admin with username", username);
+          this.logger.error(
+            `Cannot find admin with username ${username}`,
+            error.stack,
+          );
         }
       }
 
-      this.logger.error("Unexpected error", JSON.stringify(error, null, 2));
+      this.logger.error(
+        `Unexpected error ${JSON.stringify(error, null, 2)}`,
+        error.stack,
+      );
       throw new UnauthorizedException("Invalid credentials");
     }
   }
@@ -284,11 +301,11 @@ export class AuthService {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
           // Database error: Nonce existed
-          this.logger.error(error.message);
+          this.logger.error(error.message, error.stack);
           return false;
         }
 
-        this.logger.error(error.message);
+        this.logger.error(error.message, error.stack);
         return false;
       }
     }
@@ -315,7 +332,7 @@ export class AuthService {
         // https://www.prisma.io/docs/reference/api-reference/error-reference#p2025
         // Operation failed on not found entry
         if (error.code === "P2025") {
-          this.logger.error(error.message);
+          this.logger.error(error.message, error.stack);
         }
       }
 

@@ -3,7 +3,6 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
-  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import { MemeFilter, UploadMemeDTO } from "./meme.types";
@@ -21,10 +20,11 @@ import { join } from "path";
 import { stat } from "fs/promises";
 import { createReadStream } from "fs";
 import { createHash } from "crypto";
+import { LoggerService } from "@/logger/logger.service";
 
 @Injectable()
 export class MemeService {
-  private readonly logger = new Logger(MemeService.name);
+  private readonly logger = new LoggerService(MemeService.name);
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -38,7 +38,7 @@ export class MemeService {
     try {
       this.validateMemeInfo(memeInfo);
     } catch (error) {
-      this.logger.error(error.message);
+      this.logger.error(error.message, error.stack);
       throw new BadRequestException(error.message);
     }
 
@@ -50,6 +50,7 @@ export class MemeService {
       },
     });
     if (foundMeme != null) {
+      this.logger.log("FAILED: User trying to upload the same meme twice");
       throw new ConflictException("Cannot upload the same meme twice");
     }
 
@@ -57,7 +58,7 @@ export class MemeService {
     const destination = this.config.get<string>("imageDestination");
     const fileName = await saveFile(meme, destination);
     if (fileName == null) {
-      this.logger.error("Failed to save meme into file system");
+      this.logger.error("Failed to save meme into file system", "");
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
@@ -69,12 +70,15 @@ export class MemeService {
         fileId: fileName,
         fileHash,
       });
-    } catch {
+    } catch (error) {
       // Rollback image in fs
       await removeFile(fileName, destination);
 
       // Error while creating db entry. Check logs to debug
-      this.logger.error("Cannot save meme's metadata into database");
+      this.logger.error(
+        "Cannot save meme's metadata into database",
+        error.stack,
+      );
       throw new InternalServerErrorException(
         "Failed to upload meme. Please try again later",
       );
@@ -231,13 +235,13 @@ export class MemeService {
       });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
-        this.logger.error(error.message);
+        this.logger.error(error.message, error.stack);
         throw new BadRequestException(
           "Failed to save meme due to database error",
         );
       }
 
-      this.logger.error(error.message);
+      this.logger.error(error.message, error.stack);
       throw new InternalServerErrorException(
         "Unknown error occur when saving meme",
       );

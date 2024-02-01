@@ -19,14 +19,19 @@ export class AddressThrottleGuard extends ThrottlerGuard {
     }
 
     const jwtPayload = decode(accessToken, { complete: false, json: true });
-    const payload = jwtPayload["address"];
+    const { userAddress, role } = jwtPayload;
+
+    // Skip rate limiting for admins
+    if ((role as Role) === "admin") {
+      return null;
+    }
 
     // Resort to IP Address when there are no address in access token
-    if (!payload) {
+    if (!userAddress) {
       return this.getIpAddress(req);
     }
 
-    return payload;
+    return userAddress;
   }
 
   getIpAddress(req: Record<string, any>): string {

@@ -1,9 +1,9 @@
+import { LoggerService } from "@/logger/logger.service";
 import { Request, Response } from "express";
-import { Logger } from "@nestjs/common";
 import { NextFunction } from "express";
 
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
-  const logger = new Logger();
+  const logger = new LoggerService("INCOMING REQUEST");
   logger.log(`${req.method} ${req.url}: REQUEST`);
   next();
 }

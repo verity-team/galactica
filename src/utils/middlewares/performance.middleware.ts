@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import { Logger } from "@nestjs/common";
 import { NextFunction } from "express";
+import { LoggerService } from "@/logger/logger.service";
 
 export function requestTimer(req: Request, res: Response, next: NextFunction) {
-  const logger = new Logger();
+  const logger = new LoggerService("REQUEST DONE METRIC");
   const start = performance.now();
 
   res.on("close", () => {
